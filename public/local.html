@@ -8,7 +8,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
-  height:100dvh;max-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+  min-height:100dvh;display:flex;flex-direction:column}
+/* On TV: no scroll, everything fits */
+@media(min-width:901px){
+  html,body{height:100dvh;max-height:100dvh;overflow:hidden}
+}
+/* On mobile: allow vertical scroll */
+@media(max-width:900px){
+  html,body{overflow-y:auto;height:auto}
+  #cards-wrapper{transform:none!important;width:auto!important;height:auto!important}
+}
 
 /* TOP BAR */
 #top-bar{
@@ -59,25 +68,35 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 #conn-dot.ok{background:#44ff88}
 
 /* Mobile adjustments */
-@media(max-width:768px){
-  #top-bar{grid-template-columns:auto 1fr auto;gap:4px;padding:4px 8px}
+@media(max-width:900px){
+  #top-bar{
+    display:flex;flex-wrap:wrap;gap:4px;padding:4px 8px;
+    justify-content:space-between;align-items:center;
+  }
   #top-left h1{font-size:13px;letter-spacing:1px}
+  #top-left{flex:1;min-width:100px}
   #local-name-display{font-size:8px}
-  .slot-drum{width:32px;height:40px}
-  .slot-digit{height:40px;line-height:40px;font-size:18px}
-  #slot-letter{font-size:13px;padding:3px 8px;min-width:28px}
-  #cd-display{font-size:16px}
+  #top-center{order:3;width:100%;justify-content:center;padding:2px 0}
+  #top-right{flex-shrink:0}
+  .slot-drum{width:30px;height:38px}
+  .slot-digit{height:38px;line-height:38px;font-size:16px}
+  #slot-letter{font-size:12px;padding:2px 7px;min-width:26px}
+  #cd-display{font-size:15px}
   #cd-label{font-size:7px}
-  .prize-item{padding:1px 3px;font-size:8px}
+  .prize-item{padding:1px 3px;font-size:8px;gap:1px}
   .pi-icon{font-size:9px}
-  #main{padding:4px 6px 2px}
-  .bingo-card{padding:3px 2px 3px;border-radius:7px}
+  #main{padding:3px 5px 2px}
+  .bingo-card{padding:3px 2px;border-radius:7px;gap:1px}
   .cell{font-size:11px}
+  .card-header{gap:1px}
   .card-header span{font-size:8px}
+  .card-name-wrap{gap:3px;margin-bottom:1px}
   .card-name-wrap input{font-size:8px;padding:1px 3px}
-  .card-num-badge{width:15px;height:15px;font-size:8px}
-  #ticker-bar{padding:3px 8px}
-  .ticker-item{font-size:9px;padding:0 10px}
+  .card-num-badge{width:14px;height:14px;font-size:7px;border-width:1px}
+  .card-grid{gap:1px}
+  #ticker-bar{padding:2px 6px}
+  .ticker-item{font-size:9px;padding:0 8px}
+  #cards-grid{gap:4px}
 }
 
 /* MAIN */
@@ -418,8 +437,21 @@ function loadCards(cards){
   document.getElementById('waiting').style.display='none';
   const grid=document.getElementById('cards-grid');
   grid.style.display='grid';grid.innerHTML='';
-  // Dynamically set columns: 21 cards → 7 cols, 15 cards → 5 cols
-  const cols = cards.length === 21 ? 7 : cards.length === 15 ? 5 : Math.ceil(Math.sqrt(cards.length));
+  // Columns based on screen width + card count
+  function getGridCols(count) {
+    const w = window.innerWidth;
+    if (w <= 480) {
+      // Phone portrait: 3 cols for 21 cards (3×7), 3 for 15 (3×5)
+      return 3;
+    } else if (w <= 900) {
+      // Tablet / phone landscape: 5 cols
+      return count === 21 ? 5 : 4;
+    } else {
+      // TV / desktop: 7 for 21, 5 for 15
+      return count === 21 ? 7 : 5;
+    }
+  }
+  const cols = getGridCols(cards.length);
   grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   cards.forEach((card,ci)=>{
     const cardEl=document.createElement('div');
@@ -501,7 +533,20 @@ function autoFit() {
 
 window.addEventListener('resize', () => {
   clearTimeout(window._fitTimer);
-  window._fitTimer = setTimeout(autoFit, 80);
+  window._fitTimer = setTimeout(() => {
+    // Re-apply grid columns for new screen size
+    const grid = document.getElementById('cards-grid');
+    if (grid && grid.style.display !== 'none' && cardsData.length) {
+      function getGridCols2(count) {
+        const w = window.innerWidth;
+        if (w <= 480) return 3;
+        if (w <= 900) return count === 21 ? 5 : 4;
+        return count === 21 ? 7 : 5;
+      }
+      grid.style.gridTemplateColumns = `repeat(${getGridCols2(cardsData.length)},1fr)`;
+    }
+    autoFit();
+  }, 80);
 });
 
 // Stop all marking once fullCard is won in this local
