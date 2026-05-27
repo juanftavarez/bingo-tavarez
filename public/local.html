@@ -57,6 +57,7 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
 
 /* Cards */
 #cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+#cards-wrapper{transform-origin:top left;transition:transform .3s ease}
 
 .bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:2px solid #aabbdd;
   border-radius:11px;padding:6px 5px 7px;display:flex;flex-direction:column;gap:3px;
@@ -168,7 +169,7 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
     <h2>⏳ Esperando Partida</h2>
     <p style="color:#888;font-size:12px;letter-spacing:2px">El host iniciará el juego en breve</p>
   </div>
-  <div id="cards-grid" style="display:none"></div>
+  <div id="cards-wrapper"><div id="cards-grid" style="display:none"></div></div>
 </div>
 
 <div id="winner-ov">
@@ -238,6 +239,7 @@ function connect(){
         if(msg.countdownActive&&msg.countdown)updateCD(msg.countdown);
         break;
       case 'new_game':
+        gameOver=false;
         loadCards(msg.cards);
         drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();
@@ -252,6 +254,7 @@ function connect(){
       case 'countdown': updateCD(msg.seconds);break;
       case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
       case 'reset':
+        gameOver=false;
         loadCards(msg.cards);
         drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();resetPrizePanel();resetSlot();
@@ -297,10 +300,41 @@ function loadCards(cards){
     cardEl.appendChild(cg);grid.appendChild(cardEl);
   });
   setStatus(`${cards.length} cartones listos 🍀`);
+  setTimeout(autoFit, 100); // fit all cards in screen after render
 }
+
+function autoFit() {
+  const wrapper = document.getElementById('cards-wrapper');
+  const grid    = document.getElementById('cards-grid');
+  if (!wrapper || !grid) return;
+  // Available space: full window minus top bar (~70px) and other UI (~120px)
+  const topBar  = document.getElementById('top-bar');
+  const mainEl  = document.getElementById('main');
+  const prizeP  = document.getElementById('prize-panel');
+  const topH    = (topBar ? topBar.offsetHeight : 60);
+  const prizeH  = (prizeP ? prizeP.offsetHeight + 16 : 50);
+  const padding  = 24;
+  const availH  = window.innerHeight - topH - prizeH - padding - 30;
+  const availW  = window.innerWidth  - padding;
+  const gridH   = grid.scrollHeight;
+  const gridW   = grid.scrollWidth;
+  const scaleH  = availH / gridH;
+  const scaleW  = availW / gridW;
+  const scale   = Math.min(scaleH, scaleW, 1); // never scale UP
+  wrapper.style.transform = `scale(${scale})`;
+  wrapper.style.height    = (gridH * scale) + 'px';
+  wrapper.style.width     = (gridW * scale) + 'px';
+}
+
+// Re-fit on window resize
+window.addEventListener('resize', autoFit);
+
+// Stop all marking once fullCard is won in this local
+let gameOver = false;
 
 // Mark number
 function markNumber(n,animate){
+  if(gameOver) return; // fullCard won — stop marking
   cardsData.forEach((_,ci)=>{
     for(let r=0;r<5;r++)for(let c=0;c<5;c++){
       const el=document.getElementById(`cell-${ci}-${r}-${c}`);
@@ -362,6 +396,7 @@ function checkWin(ci){
     prizes.fullCard=true;
     for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
     const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+    gameOver = true; // stop all further marking in this local
     ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name}));
     return;
   }
@@ -441,7 +476,7 @@ function showWinner(msg){
   document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 10s...';
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
-  if(msg.prize!=='fullCard')setTimeout(closeWinner,10000);
+  if(msg.prize!=='fullCard')setTimeout(closeWinner,3000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
