@@ -105,6 +105,7 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
 .local-row{display:flex;align-items:center;gap:6px;padding:5px 8px;
   border-radius:8px;background:#0a0220;border:1px solid #2a1060}
 .local-row.connected{border-color:#44ff8844;background:#002200}
+.local-row.disabled-local{border-color:#ff444444;background:#220000;opacity:.8}
 .local-num{font-family:'Cinzel Decorative',serif;font-size:11px;color:#ffd700;
   min-width:20px;text-align:center}
 .local-status{width:7px;height:7px;border-radius:50%;background:#ff4444;flex-shrink:0}
@@ -272,7 +273,8 @@ function connect(){
         if(!drawnNums.has(msg.n)){drawnNums.add(msg.n);const b=document.getElementById(`ball-${msg.n}`);if(b)b.classList.add('drawn');updateDrawnList();}
         break;
       case 'locals_update':
-        localNames=msg.names||{};buildLocals(msg.names,msg.connected); break;
+        localNames=msg.names||{};
+        buildLocals(msg.names, msg.connected, msg.disabled||[]); break;
       case 'prize_won': addPrizeLog(msg);showWinner(msg); break;
       case 'countdown': updateCountdown(msg.seconds); break;
       case 'countdown_stopped': document.getElementById('countdown-display').textContent='--:--'; break;
@@ -287,25 +289,47 @@ function connect(){
 connect();
 
 // Locals panel with editable names
-function buildLocals(names={},connected=[]){
+let disabledLocals = new Set();
+
+function buildLocals(names={},connected=[],disabled=[]){
+  disabledLocals = new Set(disabled);
   const list=document.getElementById('locals-list');
   list.innerHTML='';
   document.getElementById('locals-count').textContent=`${connected.length}/10 locales`;
   for(let i=1;i<=10;i++){
-    const isConn=connected.includes(i);
+    const isConn    = connected.includes(i);
+    const isDisabled= disabled.includes(i);
     const row=document.createElement('div');
-    row.className='local-row'+(isConn?' connected':'');
+    row.className='local-row'+(isConn?' connected':'')+(isDisabled?' disabled-local':'');
+    row.id=`local-row-${i}`;
     const name=names[`local_${i}`]||`Local ${i}`;
     row.innerHTML=`
-      <div class="local-num">${i}</div>
+      <div class="local-num" style="color:${isDisabled?'#ff4444':'inherit'}">${i}</div>
       <div class="local-status${isConn?' on':''}"></div>
       <input class="local-name-input" value="${name}" placeholder="Local ${i}"
-        onchange="saveName(${i},this.value)" onblur="saveName(${i},this.value)"/>
+        onchange="saveName(${i},this.value)" onblur="saveName(${i},this.value)"
+        style="${isDisabled?'opacity:.4;text-decoration:line-through':''}" />
+      <button onclick="toggleLocal(${i})"
+        style="flex-shrink:0;padding:2px 7px;font-size:9px;font-family:Cinzel,serif;
+          font-weight:700;border-radius:5px;cursor:pointer;border:1px solid;
+          background:${isDisabled?'#440000':'#004400'};
+          color:${isDisabled?'#ff6644':'#44ff88'};
+          border-color:${isDisabled?'#ff4422':'#44ff88'}">
+        ${isDisabled?'✓ ACTIVAR':'✗ DESACT.'}
+      </button>
     `;
     list.appendChild(row);
   }
 }
 buildLocals();
+
+function toggleLocal(localId){
+  const isDisabled = disabledLocals.has(localId);
+  ws.send(JSON.stringify({
+    type: isDisabled ? 'enable_local' : 'disable_local',
+    localId
+  }));
+}
 
 function saveName(localId,name){
   ws.send(JSON.stringify({type:'set_local_name',localId,name:name.trim()||`Local ${localId}`}));
