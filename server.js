@@ -156,8 +156,7 @@ function startNewGame() {
   });
   sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
 
-  // Start countdown for next game
-  startCountdown();
+  // Countdown starts automatically when all 75 balls are drawn (see 'draw' case)
 }
 
 function getHostWs() {
@@ -206,6 +205,12 @@ wss.on('connection', (ws, req) => {
         if (!gameState.drawnNumbers.includes(msg.n)) {
           gameState.drawnNumbers.push(msg.n);
           broadcastAll({ type: 'draw', n: msg.n });
+          // If ALL 75 balls drawn, start countdown for next game
+          if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
+            console.log('All 75 balls drawn — starting 15-min countdown');
+            startCountdown(ROUND_MINUTES * 60);
+            broadcastAll({ type: 'countdown', seconds: ROUND_MINUTES * 60 });
+          }
         }
         break;
 
