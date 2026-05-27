@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>BINGO TAVAREZ</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
-  height:100vh;max-height:100vh;overflow:hidden;display:flex;flex-direction:column}
+  height:100dvh;max-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 
 /* TOP BAR */
 #top-bar{
@@ -64,7 +64,7 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 #status-msg{font-size:10px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:14px;line-height:1.2}
 
 /* Cards */
-#cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+#cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 #cards-wrapper{transform-origin:top left;transition:transform .2s ease;overflow:visible}
 
 .bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:2px solid #aabbdd;
@@ -124,28 +124,30 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 @keyframes bsZoom{0%{transform:scale(0) rotate(-5deg)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
 
 /* X2 lucky cell */
-/* X2 — just a badge, no color change */
+/* X2 — badge inside the cell, no color change */
 .cell.x2-lucky{
   position:relative !important;
 }
 .cell.x2-lucky::after{
-  content:'×2'; position:absolute; top:-7px; right:-5px;
-  background:#ffd700; color:#000; font-size:7px; font-weight:900;
-  border-radius:3px; padding:1px 3px;
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
   font-family:'Cinzel Decorative',serif;
   box-shadow:0 0 5px #ffd70088; z-index:5;
   pointer-events:none;
 }
-/* When x2 cell is marked and won — keep the ×2 badge visible */
+/* Keep ×2 badge when marked */
 .cell.x2-marked{
   position:relative !important;
 }
 .cell.x2-marked::after{
-  content:'×2'; position:absolute; top:-7px; right:-5px;
-  background:#ffd700; color:#000; font-size:7px; font-weight:900;
-  border-radius:3px; padding:1px 3px;
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
   font-family:'Cinzel Decorative',serif;
-  box-shadow:0 0 6px #ffd70099; z-index:5;
+  box-shadow:0 0 6px #ffd700cc; z-index:5;
   pointer-events:none;
 }
 
@@ -373,48 +375,46 @@ function autoFit() {
   const grid    = document.getElementById('cards-grid');
   if (!wrapper || !grid || grid.style.display === 'none') return;
 
-  // Reset transform so we measure natural size
+  // 1. Reset so we measure the grid's natural/intrinsic size
   wrapper.style.transform = 'none';
-  wrapper.style.width     = '';
-  wrapper.style.height    = '';
+  wrapper.style.width     = 'max-content';
+  wrapper.style.height    = 'auto';
 
-  // Measure available space
-  const topBar  = document.getElementById('top-bar');
-  const mainEl  = document.getElementById('main');
-  const topH    = topBar ? topBar.getBoundingClientRect().height : 60;
+  // Let browser reflow before measuring
+  requestAnimationFrame(() => {
+    const gridRect = grid.getBoundingClientRect();
+    const gridW    = gridRect.width;
+    const gridH    = gridRect.height;
+    if (!gridW || !gridH) return;
 
-  // mainEl padding top/bottom
-  const mainStyle = mainEl ? window.getComputedStyle(mainEl) : null;
-  const mainPad   = mainStyle ? (parseFloat(mainStyle.paddingTop)||0) + (parseFloat(mainStyle.paddingBottom)||0) : 20;
+    // 2. Measure ALL elements above the cards wrapper
+    const topBar    = document.getElementById('top-bar');
+    const subtitle  = document.getElementById('subtitle');
+    const statusMsg = document.getElementById('status-msg');
 
-  // Status message height
-  const statusEl  = document.getElementById('status-msg');
-  const statusH   = statusEl ? statusEl.getBoundingClientRect().height + 6 : 20;
+    const topH    = topBar    ? topBar.getBoundingClientRect().bottom  : 60;
+    const subH    = subtitle  ? subtitle.getBoundingClientRect().height + 4 : 0;
+    const statH   = statusMsg ? statusMsg.getBoundingClientRect().height + 4 : 0;
 
-  const subtitleEl = document.getElementById('subtitle');
-  const subtitleH  = subtitleEl ? subtitleEl.getBoundingClientRect().height + 6 : 16;
+    // 3. Available viewport space for the cards
+    const padding = 8;
+    const availH  = window.innerHeight - topH - subH - statH - padding;
+    const availW  = window.innerWidth  - padding;
 
-  const availH = window.innerHeight - topH - mainPad - statusH - subtitleH - 8;
-  const availW = mainEl ? mainEl.getBoundingClientRect().width - 4 : window.innerWidth - 20;
+    // 4. Compute scale to fill space (allow upscale too)
+    const scaleH = availH / gridH;
+    const scaleW = availW / gridW;
+    const scale  = Math.min(scaleH, scaleW);
 
-  // Natural grid size
-  const gridH = grid.scrollHeight;
-  const gridW = grid.scrollWidth;
-
-  if (gridH === 0 || gridW === 0) return;
-
-  const scaleH = availH / gridH;
-  const scaleW = availW / gridW;
-  const scale  = Math.min(scaleH, scaleW); // can scale UP to fill space
-
-  wrapper.style.transformOrigin = 'top left';
-  wrapper.style.transform       = `scale(${scale})`;
-  wrapper.style.width           = (gridW * scale) + 'px';
-  wrapper.style.height          = (gridH * scale) + 'px';
+    // 5. Apply — set container size so page doesn't scroll
+    wrapper.style.transformOrigin = 'top left';
+    wrapper.style.transform       = `scale(${scale})`;
+    wrapper.style.width           = Math.round(gridW * scale) + 'px';
+    wrapper.style.height          = Math.round(gridH * scale) + 'px';
+  });
 }
 
-// Re-fit whenever window changes
-window.addEventListener('resize', () => setTimeout(autoFit, 50));
+window.addEventListener('resize', () => { clearTimeout(window._fitTimer); window._fitTimer = setTimeout(autoFit, 60); });
 
 // Stop all marking once fullCard is won in this local
 let gameOver = false;
@@ -547,7 +547,7 @@ function checkWin(ci){
   for(const shape of['L','T','X','CRUZ']){
     if(!prizes[shape]&&hasPattern(ci,shape)){
       prizes[shape]=true;
-      const PCOLS={L:'#ff9900',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      const PCOLS={L:'#ffd700',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
       PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
         if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
@@ -616,7 +616,8 @@ function showWinner(msg){
   document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 3s...';
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
-  if(msg.prize!=='fullCard')setTimeout(closeWinner,3000);
+  if(msg.prize==='fullCard') setTimeout(closeWinner, 60000); // 1 minute
+  else setTimeout(closeWinner, 3000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
