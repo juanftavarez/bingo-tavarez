@@ -396,8 +396,8 @@ function loadCards(cards){
   document.getElementById('waiting').style.display='none';
   const grid=document.getElementById('cards-grid');
   grid.style.display='grid';grid.innerHTML='';
-  // Dynamically set columns: 21 cards → 7 cols, 15 cards → 5 cols
-  const cols = cards.length === 21 ? 7 : cards.length === 15 ? 5 : Math.ceil(Math.sqrt(cards.length));
+  // Dynamically set columns: 21 cards → 7 cols, 21 cards → 7 cols
+  const cols = cards.length === 21 ? 7 : cards.length === 21 ? 7 : Math.ceil(Math.sqrt(cards.length));
   grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   cards.forEach((card,ci)=>{
     const cardEl=document.createElement('div');
