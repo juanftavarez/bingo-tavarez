@@ -102,6 +102,34 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 .bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 24px rgba(255,215,0,.8)}
 @keyframes winFlash{0%,100%{background:linear-gradient(160deg,#fff,#f0f4ff)}50%{background:linear-gradient(160deg,#fff8d0,#ffeea0)}}
 
+/* Ticker bar — prizes from other locals */
+#ticker-bar{
+  background:linear-gradient(135deg,#0a0220cc,#1a0640cc);
+  border:1px solid #d4a93a44; border-radius:8px;
+  padding:4px 10px; overflow:hidden; flex-shrink:0;
+  display:none; position:relative;
+}
+#ticker-bar.show{display:block}
+#ticker-inner{
+  display:flex; align-items:center; gap:0;
+  white-space:nowrap;
+  animation:tickerScroll 20s linear infinite;
+}
+#ticker-inner:empty{animation:none}
+.ticker-item{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:0 18px; font-size:11px; color:#d4a93a;
+  font-family:'Cinzel',serif; letter-spacing:1px;
+}
+.ticker-item .ti-icon{font-size:13px}
+.ticker-item .ti-local{color:#fff;font-weight:700}
+.ticker-item .ti-prize{color:#ffd700;font-weight:900}
+.ticker-sep{color:#d4a93a44;padding:0 4px}
+@keyframes tickerScroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+
 /* Waiting */
 #waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;
   flex:1;gap:16px;text-align:center}
@@ -226,6 +254,11 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
   <div id="subtitle">by Lotronica</div>
   <div id="status-msg">⏳ Esperando conexión...</div>
 
+  <!-- Ticker bar: prizes from other locals -->
+  <div id="ticker-bar">
+    <div id="ticker-inner"></div>
+  </div>
+
   <div id="waiting">
     <h2>⏳ Esperando Partida</h2>
     <p style="color:#888;font-size:12px;letter-spacing:2px">El host iniciará el juego en breve</p>
@@ -292,6 +325,7 @@ function connect(){
     switch(msg.type){
       case 'state':
         if(msg.localName)setLocalName(msg.localName);
+        if(msg.state&&msg.state.localNames) allLocalNames=msg.state.localNames;
         if(msg.cards&&msg.cards.length){
           loadCards(msg.cards);
           if(msg.state&&msg.state.drawnNumbers)msg.state.drawnNumbers.forEach(n=>markNumber(n,false));
@@ -301,6 +335,8 @@ function connect(){
         break;
       case 'new_game':
         gameOver=false;
+        tickerItems.length=0;
+        document.getElementById('ticker-bar').classList.remove('show');
         loadCards(msg.cards);
         drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();
@@ -315,8 +351,17 @@ function connect(){
         drawnNums.add(msg.n);updateLastBall(msg.n,getCol(msg.n));
         setTimeout(()=>markNumber(msg.n,true),2300);break;
       case 'prize_won':
-        prizes[msg.prize]=true;markPrizePanelWon(msg.prize);showWinner(msg);break;
+        prizes[msg.prize]=true;
+        markPrizePanelWon(msg.prize);
+        // Show winner popup only if it's THIS local
+        if(msg.localId === LOCAL_ID) showWinner(msg);
+        // Always add to ticker for all locals
+        addTickerItem(msg);
+        break;
       case 'name_update': setLocalName(msg.name);break;
+      case 'locals_update':
+        if(msg.names) allLocalNames = msg.names;
+        break;
       case 'countdown': updateCD(msg.seconds);break;
       case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
       case 'reset':
@@ -375,49 +420,98 @@ function autoFit() {
   const grid    = document.getElementById('cards-grid');
   if (!wrapper || !grid || grid.style.display === 'none') return;
 
-  // 1. Reset so we measure the grid's natural/intrinsic size
-  wrapper.style.transform = 'none';
-  wrapper.style.width     = 'max-content';
-  wrapper.style.height    = 'auto';
+  // Step 1: Remove any existing transform so grid renders at natural size
+  wrapper.style.cssText = 'transform:none;width:auto;height:auto;overflow:visible';
 
-  // Let browser reflow before measuring
-  requestAnimationFrame(() => {
-    const gridRect = grid.getBoundingClientRect();
-    const gridW    = gridRect.width;
-    const gridH    = gridRect.height;
-    if (!gridW || !gridH) return;
+  // Step 2: Measure after a tiny delay so browser finishes layout
+  setTimeout(() => {
+    const gridNatW = grid.offsetWidth;
+    const gridNatH = grid.offsetHeight;
+    if (!gridNatW || !gridNatH) return;
 
-    // 2. Measure ALL elements above the cards wrapper
-    const topBar    = document.getElementById('top-bar');
-    const subtitle  = document.getElementById('subtitle');
-    const statusMsg = document.getElementById('status-msg');
+    // Step 3: Measure EXACT occupied space above the cards
+    const topBar   = document.getElementById('top-bar');
+    const subtitle = document.getElementById('subtitle');
+    const status   = document.getElementById('status-msg');
+    const ticker   = document.getElementById('ticker-bar');
+    const mainEl   = document.getElementById('main');
 
-    const topH    = topBar    ? topBar.getBoundingClientRect().bottom  : 60;
-    const subH    = subtitle  ? subtitle.getBoundingClientRect().height + 4 : 0;
-    const statH   = statusMsg ? statusMsg.getBoundingClientRect().height + 4 : 0;
+    let usedH = 0;
+    if (topBar)   usedH += topBar.offsetHeight;
+    if (subtitle) usedH += subtitle.offsetHeight + 4;
+    if (status)   usedH += status.offsetHeight + 4;
+    if (ticker)   usedH += ticker.offsetHeight + 4;
 
-    // 3. Available viewport space for the cards
-    const padding = 8;
-    const availH  = window.innerHeight - topH - subH - statH - padding;
-    const availW  = window.innerWidth  - padding;
+    // Main padding
+    const mst = mainEl ? window.getComputedStyle(mainEl) : null;
+    if (mst) usedH += parseFloat(mst.paddingTop||0) + parseFloat(mst.paddingBottom||0);
 
-    // 4. Compute scale to fill space (allow upscale too)
-    const scaleH = availH / gridH;
-    const scaleW = availW / gridW;
-    const scale  = Math.min(scaleH, scaleW);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
-    // 5. Apply — set container size so page doesn't scroll
-    wrapper.style.transformOrigin = 'top left';
-    wrapper.style.transform       = `scale(${scale})`;
-    wrapper.style.width           = Math.round(gridW * scale) + 'px';
-    wrapper.style.height          = Math.round(gridH * scale) + 'px';
-  });
+    const availW = vw - 8;
+    const availH = vh - usedH - 8;
+
+    if (availW <= 0 || availH <= 0) return;
+
+    const scaleW = availW / gridNatW;
+    const scaleH = availH / gridNatH;
+    const scale  = Math.min(scaleW, scaleH); // fill as much as possible
+
+    wrapper.style.cssText = [
+      'transform-origin:top left',
+      `transform:scale(${scale})`,
+      `width:${Math.round(gridNatW * scale)}px`,
+      `height:${Math.round(gridNatH * scale)}px`,
+      'overflow:visible',
+    ].join(';');
+  }, 30);
 }
 
-window.addEventListener('resize', () => { clearTimeout(window._fitTimer); window._fitTimer = setTimeout(autoFit, 60); });
+window.addEventListener('resize', () => {
+  clearTimeout(window._fitTimer);
+  window._fitTimer = setTimeout(autoFit, 80);
+});
 
 // Stop all marking once fullCard is won in this local
-let gameOver = false;
+let gameOver    = false;
+let allLocalNames = {}; // updated from server
+const tickerItems = []; // prize history for ticker
+
+const PRIZES_INFO_TICKER = {
+  L:       {icon:'🏅', label:'Figura L',    prize:'$15'},
+  T:       {icon:'🏅', label:'Figura T',    prize:'$15'},
+  X:       {icon:'🏅', label:'Figura X',    prize:'$15'},
+  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$15'},
+  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$50'},
+  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$100'},
+};
+
+function addTickerItem(msg) {
+  const info   = PRIZES_INFO_TICKER[msg.prize] || PRIZES_INFO_TICKER.line;
+  const lname  = allLocalNames[`local_${msg.localId}`] || `Local ${msg.localId}`;
+  const player = msg.playerName || `Cartón ${msg.cardIdx+1}`;
+  const x2txt  = msg.x2 ? ' ×2' : '';
+  tickerItems.push(`${info.icon} <b style="color:#fff">${lname}</b> — ${player} ganó <b style="color:#ffd700">${info.prize}${x2txt}</b> (${info.label})`);
+  renderTicker();
+}
+
+function renderTicker() {
+  if (!tickerItems.length) return;
+  const bar   = document.getElementById('ticker-bar');
+  const inner = document.getElementById('ticker-inner');
+  bar.classList.add('show');
+  // Duplicate items for seamless loop
+  const html = [...tickerItems, ...tickerItems].map(t =>
+    `<span class="ticker-item">${t}</span><span class="ticker-sep">✦</span>`
+  ).join('');
+  inner.innerHTML = html;
+  // Adjust animation speed based on content length
+  const totalW = inner.scrollWidth / 2;
+  const speed  = Math.max(15, totalW / 60); // px per second roughly
+  inner.style.animationDuration = speed + 's';
+  autoFit(); // refit after ticker shows
+}
 let x2Number  = null;   // the lucky x2 number for this local
 let localName = '';     // this local's name
 
@@ -616,8 +710,9 @@ function showWinner(msg){
   document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 3s...';
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
-  if(msg.prize==='fullCard') setTimeout(closeWinner, 60000); // 1 minute
-  else setTimeout(closeWinner, 3000);
+  clearTimeout(window._winnerTimer);
+  if(msg.prize==='fullCard') window._winnerTimer = setTimeout(closeWinner, 60000);
+  else window._winnerTimer = setTimeout(closeWinner, 3000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
