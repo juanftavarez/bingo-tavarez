@@ -310,6 +310,19 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
   <div id="cards-wrapper"><div id="cards-grid" style="display:none"></div></div>
 </div>
 
+<!-- No cards sold screen -->
+<div id="no-cards-ov" style="display:none;position:fixed;inset:0;background:#0a0510;
+  z-index:5000;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Cinzel Decorative',serif;text-align:center;gap:24px">
+  <div style="font-size:60px">🚫</div>
+  <div style="font-size:32px;color:#ffd700;text-shadow:0 0 20px #ffd70066;
+    line-height:1.3" id="no-cards-title">No se vendieron cartones<br>en esta jugada</div>
+  <div id="no-cards-local" style="font-size:18px;color:#d4a93a;letter-spacing:3px"></div>
+  <div style="font-size:14px;color:#666;letter-spacing:2px;margin-top:10px">
+    La partida continúa en los demás locales
+  </div>
+</div>
+
 <div id="winner-ov">
   <div id="winner-box">
     <div id="w-icon">🏆</div>
@@ -368,9 +381,16 @@ function connect(){
     const msg=JSON.parse(e.data);
     switch(msg.type){
       case 'state':
-        if(msg.localName)setLocalName(msg.localName);
+        if(msg.localName && !localNameManuallySet){
+          localName = msg.localName;
+          setLocalName(localName);
+        }
         if(msg.state&&msg.state.localNames) allLocalNames=msg.state.localNames;
-        if(msg.cards&&msg.cards.length){
+        if(msg.isDisabled){
+          document.getElementById('no-cards-local').textContent = localName || `Local ${LOCAL_ID}`;
+          document.getElementById('no-cards-ov').style.display = 'flex';
+          gameOver = true;
+        } else if(msg.cards&&msg.cards.length){
           loadCards(msg.cards);
           if(msg.state&&msg.state.drawnNumbers)msg.state.drawnNumbers.forEach(n=>markNumber(n,false));
         }
@@ -379,6 +399,7 @@ function connect(){
         break;
       case 'new_game':
         gameOver=false;
+        lastDrawnBall=null;
         tickerItems.length=0;
         document.getElementById('ticker-bar').classList.remove('show');
         loadCards(msg.cards);
@@ -387,12 +408,18 @@ function connect(){
         x2Number = pickX2Number(msg.cards);
         resetPrizePanel();resetSlot();updateCD(900);
         setStatus('¡Nueva partida! 🎉');
-        if(msg.localName) localName = msg.localName;
+        // Only update name if explicitly provided AND hasn't been manually changed
+        if(msg.localName && !localNameManuallySet) {
+          localName = msg.localName;
+          setLocalName(localName);
+        }
         setTimeout(() => { showBuenaSuerte(localName); }, 300);
         setTimeout(() => applyX2Cells(), 400);
         break;
       case 'draw':
-        drawnNums.add(msg.n);updateLastBall(msg.n,getCol(msg.n));
+        drawnNums.add(msg.n);
+        lastDrawnBall = msg.n;  // track which ball just came out
+        updateLastBall(msg.n,getCol(msg.n));
         setTimeout(()=>markNumber(msg.n,true),2300);break;
       case 'prize_won':
         if(msg.localId === LOCAL_ID) {
@@ -405,12 +432,26 @@ function connect(){
           addTickerItem(msg);
         }
         break;
-      case 'name_update': setLocalName(msg.name);break;
+      case 'name_update':
+        localName = msg.name;
+        localNameManuallySet = true; // host explicitly set this name
+        setLocalName(msg.name);
+        break;
       case 'locals_update':
         if(msg.names) allLocalNames = msg.names;
         break;
       case 'countdown': updateCD(msg.seconds);break;
       case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
+      case 'disabled':
+        // This local was disabled by host — show no-cards screen
+        document.getElementById('no-cards-local').textContent = localName || `Local ${LOCAL_ID}`;
+        document.getElementById('no-cards-ov').style.display = 'flex';
+        gameOver = true; // stop all game logic
+        break;
+      case 'enabled':
+        document.getElementById('no-cards-ov').style.display = 'none';
+        gameOver = false;
+        break;
       case 'reset':
         gameOver=false;
         x2Number=null;
@@ -550,7 +591,8 @@ window.addEventListener('resize', () => {
 });
 
 // Stop all marking once fullCard is won in this local
-let gameOver    = false;
+let gameOver       = false;
+let lastDrawnBall  = null;  // the ball that just triggered a win check
 let allLocalNames = {}; // updated from server
 const tickerItems = []; // prize history for ticker
 
@@ -589,7 +631,8 @@ function renderTicker() {
   autoFit(); // refit after ticker shows
 }
 let x2Number  = null;   // the lucky x2 number for this local
-let localName = '';     // this local's name
+let localName = '';          // this local's name
+let localNameManuallySet = false; // true once host sets it
 
 // Show "Buena Suerte" overlay for 3 seconds
 function showBuenaSuerte(name) {
@@ -685,10 +728,13 @@ function highlightLine(ci,line){
   cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
 }
 
-// isCardX2: x2 bonus applies if the x2 lucky number is on this card and has been drawn
+// isCardX2: ONLY triggers if the ball that just came out IS the x2 number
+// AND that x2 number is on this card AND it's what completed the prize
 function isCardX2(ci) {
-  if (!x2Number || !drawnNums.has(x2Number)) return false;
-  // Check if x2Number appears anywhere on this card
+  if (!x2Number) return false;
+  // The ball that just came out must BE the x2 number exactly
+  if (lastDrawnBall !== x2Number) return false;
+  // Confirm x2Number is on this specific card
   for (let r = 0; r < 5; r++)
     for (let c = 0; c < 5; c++) {
       const el = document.getElementById(`cell-${ci}-${r}-${c}`);
