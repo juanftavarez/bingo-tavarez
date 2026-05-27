@@ -17,9 +17,10 @@ let gameState = {
   drawnNumbers: [],
   active: false,
   cards: {},
-  prizes: {},        // { local_1: {L:false,T:false,...}, local_2: {...}, ... }
-  localNames: {},    // { local_1: "Bar El Rincón", ... }
-  countdown: null,   // seconds remaining until next auto-start
+  prizes: {},
+  localNames: {},
+  disabledLocals: new Set(), // locals with no cards sold this round
+  countdown: null,
   countdownActive: false
 };
 
@@ -133,7 +134,12 @@ function getConnectedLocals() {
 }
 
 function broadcastLocalsUpdate() {
-  broadcastAll({ type: 'locals_update', connected: getConnectedLocals(), names: gameState.localNames });
+  broadcastAll({
+    type: 'locals_update',
+    connected: getConnectedLocals(),
+    names: gameState.localNames,
+    disabled: [...gameState.disabledLocals]
+  });
 }
 
 // ── START NEW GAME ───────────────────────────────────────────────────
@@ -142,6 +148,8 @@ function startNewGame() {
   gameState.active = true;
   gameState.cards = generateAllCards();
   gameState.prizes = initPrizes();
+  gameState.disabledLocals = new Set(); // reset disabled list each new game
+  // NOTE: localNames intentionally NOT reset — preserved across games
 
   // Send each local their new cards
   clients.forEach((info, ws) => {
@@ -187,10 +195,14 @@ wss.on('connection', (ws, req) => {
         clients.set(ws, { role: 'local', localId: msg.localId });
         sendTo(ws, {
           type: 'state',
-          state: gameState,
+          state: {
+            ...gameState,
+            disabledLocals: [...gameState.disabledLocals]
+          },
           cards: gameState.cards[`local_${msg.localId}`] || [],
           prizes: gameState.prizes[`local_${msg.localId}`] || {},
           localName: gameState.localNames[`local_${msg.localId}`],
+          isDisabled: gameState.disabledLocals.has(msg.localId),
           countdown: countdownSeconds,
           countdownActive: gameState.countdownActive
         });
@@ -263,6 +275,18 @@ wss.on('connection', (ws, req) => {
           }
         });
         sendTo(ws, { type: 'reset_confirmed', state: gameState });
+        break;
+
+      case 'disable_local':
+        gameState.disabledLocals.add(msg.localId);
+        broadcastToLocal(msg.localId, { type: 'disabled', localId: msg.localId });
+        broadcastLocalsUpdate();
+        break;
+
+      case 'enable_local':
+        gameState.disabledLocals.delete(msg.localId);
+        broadcastToLocal(msg.localId, { type: 'enabled', localId: msg.localId });
+        broadcastLocalsUpdate();
         break;
 
       case 'ping':
