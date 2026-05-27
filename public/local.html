@@ -64,28 +64,28 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 #status-msg{font-size:10px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:14px;line-height:1.2}
 
 /* Cards */
-#cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+#cards-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 #cards-wrapper{transform-origin:top left;transition:transform .2s ease;overflow:visible}
 
-.bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:2px solid #aabbdd;
-  border-radius:11px;padding:6px 5px 7px;display:flex;flex-direction:column;gap:3px;
-  box-shadow:0 2px 8px rgba(0,0,80,.1)}
+.bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:1.5px solid #aabbdd;
+  border-radius:9px;padding:4px 4px 5px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 2px 6px rgba(0,0,80,.1)}
 .card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px}
 .card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
-  font-family:'Cinzel Decorative',serif;font-size:10px;font-weight:900;
-  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  border:1.5px solid #4466cc}
-.card-name-wrap input{width:100%;background:#f8faff;border:1.5px solid #aabbddaa;border-radius:6px;
-  color:#1a2a5a;font-family:'Cinzel',serif;font-size:10px;font-weight:700;
-  padding:3px 6px;outline:none;text-align:center}
+  font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:900;
+  width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1px solid #4466cc}
+.card-name-wrap input{width:100%;background:#f8faff;border:1px solid #aabbddaa;border-radius:5px;
+  color:#1a2a5a;font-family:'Cinzel',serif;font-size:9px;font-weight:700;
+  padding:2px 4px;outline:none;text-align:center}
 .card-header{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:1px}
-.card-header span{text-align:center;font-size:10px;font-weight:900;padding:1px 0;border-radius:4px;font-family:'Cinzel Decorative',serif}
+.card-header span{text-align:center;font-size:9px;font-weight:900;padding:1px 0;border-radius:3px;font-family:'Cinzel Decorative',serif}
 .ltr-B{color:#dd1144;background:#ff446622}.ltr-I{color:#cc8800;background:#ffaa0022}
 .ltr-N{color:#0099bb;background:#44ddff22}.ltr-G{color:#00aa44;background:#44ff8822}
 .ltr-O{color:#9900cc;background:#dd44ff22}
 .card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
 .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:5px;
-  font-size:14px;font-weight:800;background:#eef2ff;border:1.5px solid #c0cce8;
+  font-size:13px;font-weight:800;background:#eef2ff;border:1px solid #c0cce8;
   color:#1a2a5a;position:relative;user-select:none}
 .cell.free{background:radial-gradient(circle,#3377ff,#0a44cc);color:#fff;font-size:6px;font-weight:900;border-color:#5599ff}
 .cell.marked{background:radial-gradient(circle,#cc1a00,#8b0000)!important;color:#ffd700!important;
@@ -238,13 +238,16 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
       <div id="cd-label">Próxima</div>
       <div id="cd-display">--:--</div>
     </div>
-    <div id="prize-panel">
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
+      <div id="prize-panel">
       <div class="prize-item" id="pp-L" style="color:#ffbb00;border-color:#ffbb0055"><span class="pi-icon">🏅</span><span class="pi-val">L $15</span></div>
       <div class="prize-item" id="pp-T" style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🏅</span><span class="pi-val">T $15</span></div>
       <div class="prize-item" id="pp-X" style="color:#ff88aa;border-color:#ff88aa55"><span class="pi-icon">🏅</span><span class="pi-val">X $15</span></div>
       <div class="prize-item" id="pp-CRUZ" style="color:#88ffff;border-color:#88ffff55"><span class="pi-icon">✝️</span><span class="pi-val">$15</span></div>
       <div class="prize-item" id="pp-line" style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">🏆</span><span class="pi-val">$50</span></div>
       <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">$100</span></div>
+      </div>
     </div>
     <div id="conn-dot"></div>
   </div>
@@ -351,12 +354,15 @@ function connect(){
         drawnNums.add(msg.n);updateLastBall(msg.n,getCol(msg.n));
         setTimeout(()=>markNumber(msg.n,true),2300);break;
       case 'prize_won':
-        prizes[msg.prize]=true;
-        markPrizePanelWon(msg.prize);
-        // Show winner popup only if it's THIS local
-        if(msg.localId === LOCAL_ID) showWinner(msg);
-        // Always add to ticker for all locals
-        addTickerItem(msg);
+        if(msg.localId === LOCAL_ID) {
+          // OUR local won — update prize panel + show winner popup
+          prizes[msg.prize] = true;
+          markPrizePanelWon(msg.prize);
+          showWinner(msg);
+        } else {
+          // ANOTHER local won — only show in ticker
+          addTickerItem(msg);
+        }
         break;
       case 'name_update': setLocalName(msg.name);break;
       case 'locals_update':
@@ -390,6 +396,9 @@ function loadCards(cards){
   document.getElementById('waiting').style.display='none';
   const grid=document.getElementById('cards-grid');
   grid.style.display='grid';grid.innerHTML='';
+  // Dynamically set columns: 21 cards → 7 cols, 15 cards → 5 cols
+  const cols = cards.length === 21 ? 7 : cards.length === 15 ? 5 : Math.ceil(Math.sqrt(cards.length));
+  grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   cards.forEach((card,ci)=>{
     const cardEl=document.createElement('div');
     cardEl.className='bingo-card';cardEl.id=`card-${ci}`;
