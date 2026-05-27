@@ -9,7 +9,7 @@ const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 8080;
 const NUM_LOCALS = 10;
-const CARDS_PER_LOCAL = 15;
+const CARDS_PER_LOCAL = 21;
 const ROUND_MINUTES = 15;
 
 // ── GAME STATE ──────────────────────────────────────────────────────
@@ -219,22 +219,16 @@ wss.on('connection', (ws, req) => {
         const localKey = `local_${msg.localId}`;
         if (gameState.prizes[localKey] && !gameState.prizes[localKey][msg.prize]) {
           gameState.prizes[localKey][msg.prize] = { cardIdx: msg.cardIdx, playerName: msg.playerName };
-          // Notify ONLY that local + host
-          broadcastToLocal(msg.localId, {
+          // Broadcast to ALL locals + host so ticker shows on every screen
+          const prizeMsg = {
             type: 'prize_won',
             prize: msg.prize,
             localId: msg.localId,
             cardIdx: msg.cardIdx,
-            playerName: msg.playerName
-          });
-          const hostWs = getHostWs();
-          if (hostWs) sendTo(hostWs, {
-            type: 'prize_won',
-            prize: msg.prize,
-            localId: msg.localId,
-            cardIdx: msg.cardIdx,
-            playerName: msg.playerName
-          });
+            playerName: msg.playerName,
+            x2: msg.x2 || false
+          };
+          broadcastAll(prizeMsg); // sends to every connected client including all locals
         }
         break;
 
