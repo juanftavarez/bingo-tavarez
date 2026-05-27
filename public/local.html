@@ -58,6 +58,28 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
 #conn-dot{width:7px;height:7px;border-radius:50%;background:#ff4444;transition:background .3s}
 #conn-dot.ok{background:#44ff88}
 
+/* Mobile adjustments */
+@media(max-width:768px){
+  #top-bar{grid-template-columns:auto 1fr auto;gap:4px;padding:4px 8px}
+  #top-left h1{font-size:13px;letter-spacing:1px}
+  #local-name-display{font-size:8px}
+  .slot-drum{width:32px;height:40px}
+  .slot-digit{height:40px;line-height:40px;font-size:18px}
+  #slot-letter{font-size:13px;padding:3px 8px;min-width:28px}
+  #cd-display{font-size:16px}
+  #cd-label{font-size:7px}
+  .prize-item{padding:1px 3px;font-size:8px}
+  .pi-icon{font-size:9px}
+  #main{padding:4px 6px 2px}
+  .bingo-card{padding:3px 2px 3px;border-radius:7px}
+  .cell{font-size:11px}
+  .card-header span{font-size:8px}
+  .card-name-wrap input{font-size:8px;padding:1px 3px}
+  .card-num-badge{width:15px;height:15px;font-size:8px}
+  #ticker-bar{padding:3px 8px}
+  .ticker-item{font-size:9px;padding:0 10px}
+}
+
 /* MAIN */
 #main{padding:6px 10px 4px;display:flex;flex-direction:column;gap:4px;flex:1}
 #subtitle{font-size:8px;color:#d4a93a55;letter-spacing:3px;text-align:center;text-transform:uppercase;line-height:1}
@@ -241,12 +263,12 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
       <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
       <div id="prize-panel">
-      <div class="prize-item" id="pp-L" style="color:#ffbb00;border-color:#ffbb0055"><span class="pi-icon">🏅</span><span class="pi-val">L $15</span></div>
-      <div class="prize-item" id="pp-T" style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🏅</span><span class="pi-val">T $15</span></div>
-      <div class="prize-item" id="pp-X" style="color:#ff88aa;border-color:#ff88aa55"><span class="pi-icon">🏅</span><span class="pi-val">X $15</span></div>
-      <div class="prize-item" id="pp-CRUZ" style="color:#88ffff;border-color:#88ffff55"><span class="pi-icon">✝️</span><span class="pi-val">$15</span></div>
-      <div class="prize-item" id="pp-line" style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">🏆</span><span class="pi-val">$50</span></div>
-      <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">$100</span></div>
+        <div class="prize-item" id="pp-L"       style="color:#44ff88;border-color:#44ff8855"><span class="pi-icon">🏅</span><span class="pi-val">L $15</span></div>
+        <div class="prize-item" id="pp-T"       style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🏅</span><span class="pi-val">T $15</span></div>
+        <div class="prize-item" id="pp-X"       style="color:#ff88aa;border-color:#ff88aa55"><span class="pi-icon">🏅</span><span class="pi-val">X $15</span></div>
+        <div class="prize-item" id="pp-CRUZ"    style="color:#88ffff;border-color:#88ffff55"><span class="pi-icon">✝️</span><span class="pi-val">Cruz $15</span></div>
+        <div class="prize-item" id="pp-line"    style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">🏆</span><span class="pi-val">Bingo $50</span></div>
+        <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">Full $100</span></div>
       </div>
     </div>
     <div id="conn-dot"></div>
@@ -286,12 +308,12 @@ const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
 const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
 const PRIZES_INFO={
-  L:{icon:'🏅',color:'#ffbb00',msg:'¡FIGURA L!',prize:'$15'},
-  T:{icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',prize:'$15'},
-  X:{icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',prize:'$15'},
-  CRUZ:{icon:'✝️',color:'#88ffff',msg:'¡LA CRUZ!',prize:'$15'},
-  line:{icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',prize:'$50'},
-  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prize:'$100'},
+  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$15', amount:15},
+  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$15', amount:15},
+  X:       {icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$15', amount:15},
+  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$15', amount:15},
+  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$50', amount:50},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$100',amount:100},
 };
 const PATTERNS={
   L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
@@ -396,8 +418,8 @@ function loadCards(cards){
   document.getElementById('waiting').style.display='none';
   const grid=document.getElementById('cards-grid');
   grid.style.display='grid';grid.innerHTML='';
-  // Dynamically set columns: 21 cards → 7 cols, 21 cards → 7 cols
-  const cols = cards.length === 21 ? 7 : cards.length === 21 ? 7 : Math.ceil(Math.sqrt(cards.length));
+  // Dynamically set columns: 21 cards → 7 cols, 15 cards → 5 cols
+  const cols = cards.length === 21 ? 7 : cards.length === 15 ? 5 : Math.ceil(Math.sqrt(cards.length));
   grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   cards.forEach((card,ci)=>{
     const cardEl=document.createElement('div');
@@ -618,6 +640,18 @@ function highlightLine(ci,line){
   cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
 }
 
+// isCardX2: x2 bonus applies if the x2 lucky number is on this card and has been drawn
+function isCardX2(ci) {
+  if (!x2Number || !drawnNums.has(x2Number)) return false;
+  // Check if x2Number appears anywhere on this card
+  for (let r = 0; r < 5; r++)
+    for (let c = 0; c < 5; c++) {
+      const el = document.getElementById(`cell-${ci}-${r}-${c}`);
+      if (el && parseInt(el.dataset.num) === x2Number) return true;
+    }
+  return false;
+}
+
 function isInLine(ci, line, num) {
   // Check if num appears in the winning line cells
   const cells = [];
@@ -636,25 +670,25 @@ function checkWin(ci){
     prizes.fullCard=true;
     for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
     const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
-    gameOver = true; // stop all further marking in this local
-    ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name}));
+    gameOver = true;
+    ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
     return;
   }
   if(!prizes.line){
     const line=hasLine(ci);
     if(line){prizes.line=true;highlightLine(ci,line);
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
-      const isX2Win = x2Number && drawnNums.has(x2Number) && isInLine(ci, line, x2Number);
+      const isX2Win = isCardX2(ci);
       ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isX2Win}));return;}
   }
   for(const shape of['L','T','X','CRUZ']){
     if(!prizes[shape]&&hasPattern(ci,shape)){
       prizes[shape]=true;
-      const PCOLS={L:'#ffd700',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      const PCOLS={L:'#44ff88',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
       PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
         if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
-      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name}));return;
+      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));return;
     }
   }
 }
@@ -710,13 +744,17 @@ function resetSlot(){
 // Winner popup
 function showWinner(msg){
   const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
-  document.getElementById('w-icon').textContent=msg.x2?'✨':''+info.icon;
-  document.getElementById('w-title').textContent=msg.x2?info.msg+' ×2!':info.msg;
-  document.getElementById('w-name').textContent=msg.playerName||`Cartón ${msg.cardIdx+1}`;
-  // If x2, double the prize display
-  const prizeAmt = msg.x2 ? info.prize.replace(/\d+/, n => parseInt(n)*2) : info.prize;
-  document.getElementById('w-prize').textContent=prizeAmt+(msg.x2?' 🌟':'');
-  document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 3s...';
+  const doubled = msg.x2 ? info.amount * 2 : info.amount;
+  const prizeStr = msg.x2 ? `$${doubled} ×2` : `$${info.amount}`;
+  document.getElementById('w-icon').textContent = msg.x2 ? '✨' : info.icon;
+  document.getElementById('w-title').textContent = msg.x2
+    ? `${info.msg} — ¡BONO X2!`
+    : info.msg;
+  document.getElementById('w-name').textContent = msg.playerName || `Cartón ${msg.cardIdx+1}`;
+  document.getElementById('w-prize').textContent = prizeStr;
+  document.getElementById('w-sub').textContent = msg.prize==='fullCard'
+    ? (msg.x2 ? `¡GRAN PREMIO FINAL DOBLE! 🎉` : '¡GRAN PREMIO FINAL! 🎉')
+    : (msg.x2 ? `¡Premio doble! Continúa en 3s...` : 'Continúa en 3s...');
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
   clearTimeout(window._winnerTimer);
