@@ -3,85 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <title>BINGO TAVAREZ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:100vh;overflow-x:hidden}
 
+/* TOP BAR */
 #top-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 16px;background:#0d0528;border-bottom:2px solid #d4a93a44;flex-shrink:0}
-#top-bar h1{font-family:'Cinzel Decorative',serif;font-size:22px;
+  padding:6px 14px;background:#0d0528;border-bottom:2px solid #d4a93a44;flex-shrink:0;
+  position:sticky;top:0;z-index:100}
+#top-left{display:flex;flex-direction:column}
+#top-left h1{font-family:'Cinzel Decorative',serif;font-size:18px;
   background:linear-gradient(180deg,#fff8e0,#ffd700);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px}
-#top-right{display:flex;align-items:center;gap:12px}
-#local-badge{font-family:'Cinzel Decorative',serif;font-size:14px;color:#ffd700;
-  background:linear-gradient(135deg,#1a0840,#2d1060);border:2px solid #d4a93a;
-  border-radius:10px;padding:4px 14px;letter-spacing:2px}
-#conn-indicator{width:10px;height:10px;border-radius:50%;background:#ff4444;transition:background .3s}
-#conn-indicator.ok{background:#44ff88}
-#last-num{display:flex;align-items:center;gap:8px;
-  background:#0a0220;border:2px solid #d4a93a55;border-radius:10px;padding:6px 14px}
-#last-label{font-size:10px;color:#888;letter-spacing:2px}
-#last-value{font-family:'Cinzel Decorative',serif;font-size:24px;font-weight:900;
-  color:#ffd700;min-width:60px;text-align:center;text-shadow:0 0 14px #ffd70066}
+#local-name-display{font-size:10px;color:#d4a93a;letter-spacing:3px;margin-top:1px}
+#top-right{display:flex;align-items:center;gap:10px}
 
-#main{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
-#subtitle{font-size:11px;color:#d4a93a88;letter-spacing:4px;text-align:center;text-transform:uppercase}
-#status-msg{font-size:13px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:20px}
+/* Countdown in top bar */
+#cd-wrap{display:flex;flex-direction:column;align-items:center;
+  background:#0a0220;border:2px solid #d4a93a55;border-radius:8px;padding:4px 10px}
+#cd-label{font-size:8px;color:#888;letter-spacing:2px;text-transform:uppercase}
+#cd-display{font-family:'Cinzel Decorative',serif;font-size:20px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 10px #ffd70055;line-height:1}
+#cd-display.urgent{color:#ff4444;animation:urgPulse .5s ease-in-out infinite alternate}
+@keyframes urgPulse{from{opacity:.6}to{opacity:1}}
 
-/* Cards grid */
-#cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;flex:1}
+/* Slot machine in top bar */
+#slot-wrap{display:flex;align-items:center;gap:4px}
+#slot-label{font-size:8px;color:#888;letter-spacing:1px;text-transform:uppercase;writing-mode:vertical-lr;transform:rotate(180deg)}
+#slot-machine{display:flex;align-items:center;gap:3px}
+.slot-drum{width:40px;height:50px;background:linear-gradient(180deg,#0a0220,#1a0640,#0a0220);
+  border:1.5px solid #d4a93a;border-radius:7px;overflow:hidden;position:relative;
+  box-shadow:0 0 10px rgba(212,169,58,.3),inset 0 0 8px rgba(0,0,0,.6);transition:border-color .3s,box-shadow .3s}
+.slot-drum::before,.slot-drum::after{content:'';position:absolute;left:0;right:0;height:14px;z-index:2;pointer-events:none}
+.slot-drum::before{top:0;background:linear-gradient(to bottom,#0a0220ee,transparent)}
+.slot-drum::after{bottom:0;background:linear-gradient(to top,#0a0220ee,transparent)}
+.slot-drum .center-line{position:absolute;top:50%;left:0;right:0;height:1.5px;background:#d4a93a88;z-index:3;transform:translateY(-50%);pointer-events:none}
+.slot-reel{display:flex;flex-direction:column;align-items:center;position:absolute;left:0;right:0;top:0;will-change:top}
+.slot-digit{height:50px;line-height:50px;font-family:'Cinzel Decorative',serif;font-size:22px;font-weight:900;color:#ffd700;text-align:center;width:100%;text-shadow:0 0 6px #ffd70066}
+#slot-letter{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;
+  padding:4px 10px;border-radius:7px;border:1.5px solid #555;
+  background:linear-gradient(135deg,#1a0840,#2d1060);min-width:34px;text-align:center;
+  transition:color .3s,border-color .3s,box-shadow .3s}
 
-/* Bingo card */
+#conn-dot{width:7px;height:7px;border-radius:50%;background:#ff4444;transition:background .3s}
+#conn-dot.ok{background:#44ff88}
+
+/* MAIN */
+#main{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+#subtitle{font-size:9px;color:#d4a93a66;letter-spacing:4px;text-align:center;text-transform:uppercase}
+#status-msg{font-size:11px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:16px}
+
+/* Cards */
+#cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+
 .bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:2px solid #aabbdd;
-  border-radius:12px;padding:7px 6px 8px;display:flex;flex-direction:column;gap:3px;
-  box-shadow:0 2px 10px rgba(0,0,80,.12)}
-.card-name-wrap{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+  border-radius:11px;padding:6px 5px 7px;display:flex;flex-direction:column;gap:3px;
+  box-shadow:0 2px 8px rgba(0,0,80,.1)}
+.card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px}
 .card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
-  font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:900;
-  width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  border:2px solid #4466cc;box-shadow:0 0 5px rgba(50,100,200,.3)}
-.card-name-wrap input{width:100%;background:#f8faff;border:1.5px solid #aabbddaa;border-radius:7px;
-  color:#1a2a5a;font-family:'Cinzel',serif;font-size:11px;font-weight:700;
-  padding:4px 7px;outline:none;text-align:center;letter-spacing:1px}
-.card-name-wrap input:focus{border-color:#4488ff}
-.card-name-wrap input::placeholder{color:#99aacc;font-size:10px}
+  font-family:'Cinzel Decorative',serif;font-size:10px;font-weight:900;
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid #4466cc}
+.card-name-wrap input{width:100%;background:#f8faff;border:1.5px solid #aabbddaa;border-radius:6px;
+  color:#1a2a5a;font-family:'Cinzel',serif;font-size:10px;font-weight:700;
+  padding:3px 6px;outline:none;text-align:center}
 .card-header{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:1px}
-.card-header span{text-align:center;font-size:11px;font-weight:900;padding:2px 0;
-  border-radius:4px;font-family:'Cinzel Decorative',serif}
+.card-header span{text-align:center;font-size:10px;font-weight:900;padding:1px 0;border-radius:4px;font-family:'Cinzel Decorative',serif}
 .ltr-B{color:#dd1144;background:#ff446622}.ltr-I{color:#cc8800;background:#ffaa0022}
 .ltr-N{color:#0099bb;background:#44ddff22}.ltr-G{color:#00aa44;background:#44ff8822}
 .ltr-O{color:#9900cc;background:#dd44ff22}
 .card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
-.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;
-  font-size:15px;font-weight:800;background:#eef2ff;border:1.5px solid #c0cce8;
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:5px;
+  font-size:14px;font-weight:800;background:#eef2ff;border:1.5px solid #c0cce8;
   color:#1a2a5a;position:relative;user-select:none}
-.cell.free{background:radial-gradient(circle,#3377ff,#0a44cc);color:#fff;
-  font-size:7px;font-weight:900;border-color:#5599ff;box-shadow:0 0 8px rgba(50,120,255,.5)}
+.cell.free{background:radial-gradient(circle,#3377ff,#0a44cc);color:#fff;font-size:6px;font-weight:900;border-color:#5599ff}
 .cell.marked{background:radial-gradient(circle,#cc1a00,#8b0000)!important;color:#ffd700!important;
-  border-color:#ff4400!important;box-shadow:0 0 10px rgba(255,60,0,.7)!important;
-  transform:scale(.94);font-weight:900;font-size:16px!important}
-.cell.marked.free{background:radial-gradient(circle,#2266ff,#0a3399)!important;
-  color:#fff!important;border-color:#4488ff!important}
+  border-color:#ff4400!important;box-shadow:0 0 8px rgba(255,60,0,.7)!important;transform:scale(.94);font-weight:900;font-size:15px!important}
+.cell.marked.free{background:radial-gradient(circle,#2266ff,#0a3399)!important;color:#fff!important;border-color:#4488ff!important}
 .cell.win-line{background:radial-gradient(circle,#00ffcc,#00aa88)!important;color:#000!important;
-  border-color:#00ffcc!important;box-shadow:0 0 16px rgba(0,255,200,.9)!important;
-  font-weight:900!important;animation:lineGlow 1s ease-in-out infinite alternate!important}
+  border-color:#00ffcc!important;box-shadow:0 0 14px rgba(0,255,200,.9)!important;font-weight:900!important;
+  animation:lineGlow 1s ease-in-out infinite alternate!important}
 .cell.win-full{background:radial-gradient(circle,#ffd700,#cc8800)!important;color:#000!important;
-  border-color:#ffd700!important;box-shadow:0 0 14px rgba(255,215,0,.95)!important;
-  font-weight:900!important;animation:fullGlow .8s ease-in-out infinite alternate!important}
-@keyframes lineGlow{from{box-shadow:0 0 8px rgba(0,255,200,.7)}to{box-shadow:0 0 24px rgba(0,255,200,1),0 0 6px #fff}}
-@keyframes fullGlow{from{box-shadow:0 0 8px rgba(255,215,0,.7)}to{box-shadow:0 0 24px rgba(255,215,0,1),0 0 6px #fff8}}
-.bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 30px rgba(255,215,0,.8)}
+  border-color:#ffd700!important;box-shadow:0 0 12px rgba(255,215,0,.95)!important;font-weight:900!important;
+  animation:fullGlow .8s ease-in-out infinite alternate!important}
+@keyframes lineGlow{from{box-shadow:0 0 6px rgba(0,255,200,.7)}to{box-shadow:0 0 20px rgba(0,255,200,1),0 0 5px #fff}}
+@keyframes fullGlow{from{box-shadow:0 0 6px rgba(255,215,0,.7)}to{box-shadow:0 0 20px rgba(255,215,0,1),0 0 5px #fff8}}
+.bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 24px rgba(255,215,0,.8)}
 @keyframes winFlash{0%,100%{background:linear-gradient(160deg,#fff,#f0f4ff)}50%{background:linear-gradient(160deg,#fff8d0,#ffeea0)}}
 
-/* Waiting screen */
+/* Waiting */
 #waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex:1;gap:20px;text-align:center}
-#waiting h2{font-family:'Cinzel Decorative',serif;font-size:28px;color:#ffd700;
-  text-shadow:0 0 20px #ffd70066;animation:pulse 2s ease-in-out infinite}
+  min-height:60vh;gap:20px;text-align:center}
+#waiting h2{font-family:'Cinzel Decorative',serif;font-size:26px;color:#ffd700;
+  text-shadow:0 0 18px #ffd70066;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
-#waiting p{color:#888;font-size:14px;letter-spacing:2px}
+
+/* Prize panel */
+#prize-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;flex-shrink:0}
+.prize-item{display:flex;flex-direction:column;align-items:center;padding:5px;
+  border-radius:8px;border:1px solid;font-size:10px;text-align:center;transition:opacity .3s}
+.prize-item.won{opacity:.3;text-decoration:line-through}
 
 /* Winner overlay */
 #winner-ov{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;
@@ -90,7 +113,7 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
 #winner-box{background:radial-gradient(circle at 40% 30%,#2d1060,#0a0510);border:5px solid #ffd700;
   border-radius:28px;padding:50px 80px;text-align:center;
   transform:scale(.5);transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
-  font-family:'Cinzel Decorative',serif;box-shadow:0 0 80px rgba(255,215,0,.4);max-width:700px}
+  font-family:'Cinzel Decorative',serif;box-shadow:0 0 80px rgba(255,215,0,.4)}
 #winner-ov.show #winner-box{transform:scale(1)}
 #w-icon{font-size:70px;margin-bottom:10px}
 #w-title{font-size:28px;color:#d4a93a;margin-bottom:6px}
@@ -106,14 +129,24 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
 <canvas id="fwc"></canvas>
 
 <div id="top-bar">
-  <h1>✦ BINGO TAVAREZ ✦</h1>
+  <div id="top-left">
+    <h1>✦ BINGO TAVAREZ ✦</h1>
+    <div id="local-name-display">Conectando...</div>
+  </div>
   <div id="top-right">
-    <div id="last-num">
-      <span id="last-label">ÚLTIMO</span>
-      <span id="last-value">—</span>
+    <div id="cd-wrap">
+      <div id="cd-label">Próxima</div>
+      <div id="cd-display">--:--</div>
     </div>
-    <div id="local-badge">LOCAL <span id="local-num">?</span></div>
-    <div id="conn-indicator"></div>
+    <div id="slot-wrap">
+      <div id="slot-label">Último</div>
+      <div id="slot-machine">
+        <div id="slot-letter" style="color:#555;border-color:#444">?</div>
+        <div class="slot-drum" id="drum-tens"><div class="slot-reel" id="reel-tens"></div><div class="center-line"></div></div>
+        <div class="slot-drum" id="drum-units"><div class="slot-reel" id="reel-units"></div><div class="center-line"></div></div>
+      </div>
+    </div>
+    <div id="conn-dot"></div>
   </div>
 </div>
 
@@ -121,18 +154,27 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
   <div id="subtitle">by Lotronica</div>
   <div id="status-msg">⏳ Esperando conexión...</div>
 
-  <div id="waiting">
-    <h2>⏳ Esperando Nueva Partida</h2>
-    <p>El host iniciará el juego en breve</p>
+  <!-- Prize panel -->
+  <div id="prize-panel">
+    <div class="prize-item" id="pp-L" style="color:#ffbb00;border-color:#ffbb0044">🏅<br>L<br>$15</div>
+    <div class="prize-item" id="pp-T" style="color:#ee88ff;border-color:#ee88ff44">🏅<br>T<br>$15</div>
+    <div class="prize-item" id="pp-X" style="color:#ff88aa;border-color:#ff88aa44">🏅<br>X<br>$15</div>
+    <div class="prize-item" id="pp-CRUZ" style="color:#88ffff;border-color:#88ffff44">✝️<br>Cruz<br>$15</div>
+    <div class="prize-item" id="pp-line" style="color:#00ffcc;border-color:#00ffcc44">🏆<br>Bingo<br>$50</div>
+    <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70044">🌟<br>Full<br>$100</div>
   </div>
 
+  <div id="waiting">
+    <h2>⏳ Esperando Partida</h2>
+    <p style="color:#888;font-size:12px;letter-spacing:2px">El host iniciará el juego en breve</p>
+  </div>
   <div id="cards-grid" style="display:none"></div>
 </div>
 
 <div id="winner-ov">
   <div id="winner-box">
     <div id="w-icon">🏆</div>
-    <div id="w-title">¡PREMIO!</div>
+    <div id="w-title"></div>
     <div id="w-name"></div>
     <div id="w-prize"></div>
     <div id="w-sub"></div>
@@ -141,311 +183,274 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;min-height:10
 </div>
 
 <script>
-// Get local ID from URL: /local/3 → localId = 3
-const pathParts = window.location.pathname.split('/');
-const LOCAL_ID = parseInt(pathParts[pathParts.length - 1]) || 1;
-document.getElementById('local-num').textContent = LOCAL_ID;
+const pathParts=window.location.pathname.split('/');
+const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
-const PRIZES_INFO = {
-  L:       {icon:'🏅',color:'#ffbb00',msg:'¡FIGURA L!',     prize:'$15'},
-  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$15'},
-  X:       {icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$15'},
-  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$15'},
-  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$50'},
-  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$100'},
+const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
+const PRIZES_INFO={
+  L:{icon:'🏅',color:'#ffbb00',msg:'¡FIGURA L!',prize:'$15'},
+  T:{icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',prize:'$15'},
+  X:{icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',prize:'$15'},
+  CRUZ:{icon:'✝️',color:'#88ffff',msg:'¡LA CRUZ!',prize:'$15'},
+  line:{icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',prize:'$50'},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prize:'$100'},
+};
+const PATTERNS={
+  L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
+  T:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,2],[2,2],[3,2],[4,2]],
+  X:[[1,1],[1,3],[3,1],[3,3]],
+  CRUZ:[[1,2],[2,1],[2,3],[3,2]],
 };
 
-const PATTERNS = {
-  L:    [[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
-  T:    [[0,0],[0,1],[0,2],[0,3],[0,4],[1,2],[2,2],[3,2],[4,2]],
-  X:    [[1,1],[1,3],[3,1],[3,3]],
-  CRUZ: [[1,2],[2,1],[2,3],[3,2]],
-};
+let cardsData=[], drawnNums=new Set();
+let prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+const highlightedLines=new Set();
+let slotRolling=false;
+let countdownTotal=900;
 
-let cardsData = [];
-let drawnNums = new Set();
-let prizes = { L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false };
-const highlightedLines = new Set();
+// Countdown
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function updateCD(s){
+  const el=document.getElementById('cd-display');
+  el.textContent=fmtTime(s);el.className=s<=60?'urgent':'';
+}
 
-// ── WEBSOCKET ──────────────────────────────────────────────────────
-const wsUrl = location.protocol === 'https:'
-  ? `wss://${location.host}`
-  : `ws://${location.host}`;
+// WebSocket
+const wsUrl=location.protocol==='https:'?`wss://${location.host}`:`ws://${location.host}`;
 let ws;
-
-function connect() {
-  ws = new WebSocket(wsUrl);
-  ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'join_local', localId: LOCAL_ID }));
-    document.getElementById('conn-indicator').classList.add('ok');
+function connect(){
+  ws=new WebSocket(wsUrl);
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({type:'join_local',localId:LOCAL_ID}));
+    document.getElementById('conn-dot').classList.add('ok');
     setStatus('Conectado ✓');
   };
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    switch (msg.type) {
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    switch(msg.type){
       case 'state':
-        if (msg.cards && msg.cards.length) {
+        if(msg.localName)setLocalName(msg.localName);
+        if(msg.cards&&msg.cards.length){
           loadCards(msg.cards);
-          msg.state.drawnNumbers.forEach(n => markNumberOnCards(n, false));
-          prizes = {...msg.state.prizes};
-          updateLastNum(msg.state.drawnNumbers[msg.state.drawnNumbers.length - 1]);
+          if(msg.state&&msg.state.drawnNumbers)msg.state.drawnNumbers.forEach(n=>markNumber(n,false));
         }
+        if(msg.prizes)restorePrizes(msg.prizes);
+        if(msg.countdownActive&&msg.countdown)updateCD(msg.countdown);
         break;
       case 'new_game':
         loadCards(msg.cards);
-        drawnNums = new Set();
-        prizes = {L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();
-        updateLastNum(null);
-        setStatus('¡Nueva partida iniciada! 🎉');
-        break;
+        resetPrizePanel();resetSlot();updateCD(900);
+        setStatus('¡Nueva partida! 🎉');break;
       case 'draw':
-        drawnNums.add(msg.n);
-        updateLastNum(msg.n);
-        markNumberOnCards(msg.n, true);
-        break;
+        drawnNums.add(msg.n);updateLastBall(msg.n,getCol(msg.n));
+        setTimeout(()=>markNumber(msg.n,true),2300);break;
       case 'prize_won':
-        prizes[msg.prize] = true;
-        showWinner(msg);
-        break;
+        prizes[msg.prize]=true;markPrizePanelWon(msg.prize);showWinner(msg);break;
+      case 'name_update': setLocalName(msg.name);break;
+      case 'countdown': updateCD(msg.seconds);break;
+      case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
       case 'reset':
         loadCards(msg.cards);
-        drawnNums = new Set();
-        prizes = {L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
-        highlightedLines.clear();
-        updateLastNum(null);
-        setStatus('Partida reseteada');
-        break;
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        highlightedLines.clear();resetPrizePanel();resetSlot();
+        setStatus('Partida reseteada');break;
     }
   };
-  ws.onclose = () => {
-    document.getElementById('conn-indicator').classList.remove('ok');
-    setStatus('Desconectado — reconectando...');
-    setTimeout(connect, 2000);
-  };
+  ws.onclose=()=>{document.getElementById('conn-dot').classList.remove('ok');setStatus('Desconectado...');setTimeout(connect,2000);};
 }
 connect();
 
-function setStatus(msg) {
-  document.getElementById('status-msg').textContent = msg;
+function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+function setLocalName(name){
+  document.getElementById('local-name-display').textContent=name;
+  document.title=`${name} - Bingo Tavarez`;
 }
+function getCol(n){if(n<=15)return 'B';if(n<=30)return 'I';if(n<=45)return 'N';if(n<=60)return 'G';return 'O';}
 
-function updateLastNum(n) {
-  document.getElementById('last-value').textContent = n ? n : '—';
-}
-
-// ── LOAD CARDS ─────────────────────────────────────────────────────
-function loadCards(cards) {
-  cardsData = cards;
-  document.getElementById('waiting').style.display = 'none';
-  const grid = document.getElementById('cards-grid');
-  grid.style.display = 'grid';
-  grid.innerHTML = '';
-
-  cards.forEach((card, ci) => {
-    const cardEl = document.createElement('div');
-    cardEl.className = 'bingo-card';
-    cardEl.id = `card-${ci}`;
-    cardEl.style.background = 'linear-gradient(160deg,#ffffff,#f0f4ff)';
-    cardEl.style.borderColor = '#aabbdd';
-
-    // Name wrap
-    const nw = document.createElement('div');
-    nw.className = 'card-name-wrap';
-    const badge = document.createElement('div');
-    badge.className = 'card-num-badge';
-    badge.textContent = (LOCAL_ID - 1) * 15 + ci + 1;
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = `Jugador ${(LOCAL_ID-1)*15+ci+1}`;
-    inp.id = `name-${ci}`;
-    inp.maxLength = 20;
-    nw.appendChild(badge); nw.appendChild(inp);
-    cardEl.appendChild(nw);
-
-    // Header
-    const hdr = document.createElement('div');
-    hdr.className = 'card-header';
-    ['B','I','N','G','O'].forEach(l => {
-      const s = document.createElement('span');
-      s.className = `ltr-${l}`; s.textContent = l;
-      hdr.appendChild(s);
-    });
+// Load cards
+function loadCards(cards){
+  cardsData=cards;
+  document.getElementById('waiting').style.display='none';
+  const grid=document.getElementById('cards-grid');
+  grid.style.display='grid';grid.innerHTML='';
+  cards.forEach((card,ci)=>{
+    const cardEl=document.createElement('div');
+    cardEl.className='bingo-card';cardEl.id=`card-${ci}`;
+    const nw=document.createElement('div');nw.className='card-name-wrap';
+    const badge=document.createElement('div');badge.className='card-num-badge';
+    badge.textContent=(LOCAL_ID-1)*15+ci+1;
+    const inp=document.createElement('input');inp.type='text';
+    inp.placeholder=`Jugador ${(LOCAL_ID-1)*15+ci+1}`;inp.id=`name-${ci}`;inp.maxLength=20;
+    nw.appendChild(badge);nw.appendChild(inp);cardEl.appendChild(nw);
+    const hdr=document.createElement('div');hdr.className='card-header';
+    ['B','I','N','G','O'].forEach(l=>{const s=document.createElement('span');s.className=`ltr-${l}`;s.textContent=l;hdr.appendChild(s);});
     cardEl.appendChild(hdr);
-
-    // Grid 5x5
-    const cg = document.createElement('div');
-    cg.className = 'card-grid';
-    for (let r = 0; r < 5; r++) {
-      for (let c = 0; c < 5; c++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.id = `cell-${ci}-${r}-${c}`;
-        const isFree = (r===2 && c===2);
-        if (isFree) { cell.classList.add('free','marked'); cell.textContent='FREE'; }
-        else { cell.textContent = card[r][c]; cell.dataset.num = card[r][c]; }
-        cg.appendChild(cell);
-      }
+    const cg=document.createElement('div');cg.className='card-grid';
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const cell=document.createElement('div');cell.className='cell';cell.id=`cell-${ci}-${r}-${c}`;
+      if(r===2&&c===2){cell.classList.add('free','marked');cell.textContent='FREE';}
+      else{cell.textContent=card[r][c];cell.dataset.num=card[r][c];}
+      cg.appendChild(cell);
     }
-    cardEl.appendChild(cg);
-    grid.appendChild(cardEl);
+    cardEl.appendChild(cg);grid.appendChild(cardEl);
   });
-
-  setStatus(`${cards.length} cartones listos — ¡Buena suerte! 🍀`);
+  setStatus(`${cards.length} cartones listos 🍀`);
 }
 
-// ── MARK NUMBER ON CARDS ────────────────────────────────────────────
-function markNumberOnCards(n, animate) {
-  cardsData.forEach((card, ci) => {
-    for (let r = 0; r < 5; r++) {
-      for (let c = 0; c < 5; c++) {
-        const cell = document.getElementById(`cell-${ci}-${r}-${c}`);
-        if (cell && parseInt(cell.dataset.num) === n) {
-          cell.classList.add('marked');
-          if (animate) flashCell(cell);
-        }
+// Mark number
+function markNumber(n,animate){
+  cardsData.forEach((_,ci)=>{
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+      if(el&&parseInt(el.dataset.num)===n){
+        el.classList.add('marked');
+        if(animate)flashCell(el);
       }
     }
     checkWin(ci);
   });
 }
 
-function flashCell(el) {
-  if (!el) return;
-  el.style.position = 'relative'; el.style.zIndex = '10';
-  const frames = [
-    {transform:'scale(1.35)',boxShadow:'0 0 0 4px #ffd700,0 0 20px #ffd700',filter:'brightness(2)',offset:0},
-    {transform:'scale(1.2)', boxShadow:'0 0 0 3px #ff8800,0 0 14px #ff8800', filter:'brightness(1.5)',offset:.2},
-    {transform:'scale(1.1)', boxShadow:'0 0 0 2px #ff4400,0 0 10px #ff4400', filter:'brightness(1.2)',offset:.45},
-    {transform:'scale(.96)', boxShadow:'0 0 8px rgba(255,60,0,.8)',filter:'brightness(1)',offset:.7},
-    {transform:'scale(.94)', boxShadow:'0 0 10px rgba(255,60,0,.7)',filter:'brightness(1)',offset:1},
+function flashCell(el){
+  if(!el)return;
+  el.style.position='relative';el.style.zIndex='10';
+  const frames=[
+    {transform:'scale(1.35)',boxShadow:'0 0 0 4px #ffd700,0 0 18px #ffd700',filter:'brightness(2)',offset:0},
+    {transform:'scale(1.18)',boxShadow:'0 0 0 3px #ff8800,0 0 12px #ff8800',filter:'brightness(1.5)',offset:.2},
+    {transform:'scale(1.08)',boxShadow:'0 0 0 2px #ff4400,0 0 8px #ff4400',filter:'brightness(1.2)',offset:.45},
+    {transform:'scale(.96)',boxShadow:'0 0 7px rgba(255,60,0,.8)',filter:'brightness(1)',offset:.7},
+    {transform:'scale(.94)',boxShadow:'0 0 8px rgba(255,60,0,.7)',filter:'brightness(1)',offset:1},
   ];
-  const anim = el.animate(frames, {duration:1500,easing:'ease-out',fill:'forwards'});
-  anim.onfinish = () => { el.style.zIndex=''; el.style.position=''; };
-  // Ring
-  const ring = document.createElement('div');
-  ring.style.cssText='position:absolute;inset:-5px;border-radius:8px;pointer-events:none;border:3px solid #ffd700;z-index:20;';
+  const anim=el.animate(frames,{duration:1400,easing:'ease-out',fill:'forwards'});
+  anim.onfinish=()=>{el.style.zIndex='';el.style.position='';};
+  const ring=document.createElement('div');
+  ring.style.cssText='position:absolute;inset:-4px;border-radius:7px;pointer-events:none;border:2.5px solid #ffd700;z-index:20;';
   el.appendChild(ring);
   ring.animate([
     {opacity:1,transform:'scale(1)',borderColor:'#ffd700'},
-    {opacity:.7,transform:'scale(1.6)',borderColor:'#ff8800'},
+    {opacity:.7,transform:'scale(1.5)',borderColor:'#ff8800'},
     {opacity:0,transform:'scale(2.2)',borderColor:'#ff4400'},
-  ],{duration:800,easing:'ease-out',fill:'forwards'}).onfinish=()=>ring.remove();
+  ],{duration:750,easing:'ease-out',fill:'forwards'}).onfinish=()=>ring.remove();
 }
 
-// ── WIN DETECTION ───────────────────────────────────────────────────
-function isMarked(ci, r, c) {
-  if (r===2&&c===2) return true;
-  const el = document.getElementById(`cell-${ci}-${r}-${c}`);
-  return el && el.classList.contains('marked');
-}
-
-function hasLine(ci) {
-  for(let r=0;r<5;r++) if([0,1,2,3,4].every(c=>isMarked(ci,r,c))) return {type:'row',idx:r};
-  for(let c=0;c<5;c++) if([0,1,2,3,4].every(r=>isMarked(ci,r,c))) return {type:'col',idx:c};
-  if([0,1,2,3,4].every(i=>isMarked(ci,i,i))) return {type:'diag',idx:0};
-  if([0,1,2,3,4].every(i=>isMarked(ci,i,4-i))) return {type:'diag',idx:1};
+// Win detection
+function isMarked(ci,r,c){if(r===2&&c===2)return true;const el=document.getElementById(`cell-${ci}-${r}-${c}`);return el&&el.classList.contains('marked');}
+function hasLine(ci){
+  for(let r=0;r<5;r++)if([0,1,2,3,4].every(c=>isMarked(ci,r,c)))return{type:'row',idx:r};
+  for(let c=0;c<5;c++)if([0,1,2,3,4].every(r=>isMarked(ci,r,c)))return{type:'col',idx:c};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,i)))return{type:'diag',idx:0};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,4-i)))return{type:'diag',idx:1};
   return null;
 }
+function hasFullCard(ci){for(let r=0;r<5;r++)for(let c=0;c<5;c++)if(!isMarked(ci,r,c))return false;return true;}
+function hasPattern(ci,name){return PATTERNS[name].every(([r,c])=>isMarked(ci,r,c));}
 
-function hasFullCard(ci) {
-  for(let r=0;r<5;r++) for(let c=0;c<5;c++) if(!isMarked(ci,r,c)) return false;
-  return true;
-}
-
-function hasPattern(ci, name) {
-  return PATTERNS[name].every(([r,c])=>isMarked(ci,r,c));
-}
-
-function highlightLine(ci, line) {
-  const key=`${ci}-${line.type}-${line.idx}`;
-  if(highlightedLines.has(key)) return; highlightedLines.add(key);
+function highlightLine(ci,line){
+  const key=`${ci}-${line.type}-${line.idx}`;if(highlightedLines.has(key))return;highlightedLines.add(key);
   const cells=[];
-  if(line.type==='row') for(let c=0;c<5;c++) cells.push([line.idx,c]);
-  else if(line.type==='col') for(let r=0;r<5;r++) cells.push([r,line.idx]);
-  else for(let i=0;i<5;i++) cells.push([i,line.idx===0?i:4-i]);
-  cells.forEach(([r,c])=>{
-    const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-    if(el){el.style.cssText='';el.classList.add('win-line');}
-  });
+  if(line.type==='row')for(let c=0;c<5;c++)cells.push([line.idx,c]);
+  else if(line.type==='col')for(let r=0;r<5;r++)cells.push([r,line.idx]);
+  else for(let i=0;i<5;i++)cells.push([i,line.idx===0?i:4-i]);
+  cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
 }
 
-function checkWin(ci) {
-  const allDone = Object.values(prizes).every(v=>v);
-  if (allDone) return;
-
-  // Full card
-  if (prizes.line && !prizes.fullCard && hasFullCard(ci)) {
-    prizes.fullCard = true;
-    for(let r=0;r<5;r++) for(let c=0;c<5;c++){
-      const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-      if(el){el.style.cssText='';el.classList.add('win-full');}
-    }
-    const name = document.getElementById(`name-${ci}`)?.value.trim() || `Cartón ${ci+1}`;
+function checkWin(ci){
+  if(prizes.fullCard)return;
+  if(prizes.line&&hasFullCard(ci)){
+    prizes.fullCard=true;
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
+    const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
     ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name}));
     return;
   }
-
-  // Line bingo
-  if (!prizes.line) {
-    const line = hasLine(ci);
-    if (line) {
-      prizes.line = true;
-      highlightLine(ci, line);
-      const name = document.getElementById(`name-${ci}`)?.value.trim() || `Cartón ${ci+1}`;
-      ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name}));
-      return;
-    }
+  if(!prizes.line){
+    const line=hasLine(ci);
+    if(line){prizes.line=true;highlightLine(ci,line);
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name}));return;}
   }
-
-  // Shape prizes
-  for (const shape of ['L','T','X','CRUZ']) {
-    if (!prizes[shape] && hasPattern(ci, shape)) {
-      prizes[shape] = true;
-      PATTERNS[shape].forEach(([r,c])=>{
-        const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-        if(el){el.style.cssText='';el.classList.remove('win-line','win-full');}
-      });
-      const COLORS={L:'#ff9900',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
-      PATTERNS[shape].forEach(([r,c])=>{
-        const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-        if(el) el.style.cssText=`background:radial-gradient(circle,${COLORS[shape]},#000088)!important;border-color:${COLORS[shape]}!important;box-shadow:0 0 14px ${COLORS[shape]}99!important;color:#000!important;font-weight:900!important;animation:patGlow .9s ease-in-out infinite alternate`;
-      });
-      const name = document.getElementById(`name-${ci}`)?.value.trim() || `Cartón ${ci+1}`;
-      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name}));
-      return;
+  for(const shape of['L','T','X','CRUZ']){
+    if(!prizes[shape]&&hasPattern(ci,shape)){
+      prizes[shape]=true;
+      const PCOLS={L:'#ff9900',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+        if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name}));return;
     }
   }
 }
 
-// ── WINNER POPUP ────────────────────────────────────────────────────
-function showWinner(msg) {
-  const info = PRIZES_INFO[msg.prize] || PRIZES_INFO.line;
-  const isOurCard = msg.localId === LOCAL_ID;
-  document.getElementById('w-icon').textContent = info.icon;
-  document.getElementById('w-title').textContent = isOurCard ? `¡${info.msg}` : info.msg;
-  document.getElementById('w-name').textContent = msg.playerName || `Cartón ${msg.cardIdx+1}`;
-  document.getElementById('w-prize').textContent = info.prize;
-  document.getElementById('w-sub').textContent = isOurCard
-    ? (msg.prize==='fullCard' ? '¡ERES EL GRAN GANADOR! 🎉' : 'Continúa en 10s...')
-    : (msg.prize==='fullCard' ? `¡Ganó el Local ${msg.localId}!` : `Local ${msg.localId} · Continúa en 10s...`);
-  if (isOurCard) document.getElementById('winner-box').style.borderColor = info.color;
+// Prize panel
+function markPrizePanelWon(prize){const el=document.getElementById(`pp-${prize}`);if(el)el.classList.add('won');}
+function resetPrizePanel(){Object.keys(prizes).forEach(k=>{const el=document.getElementById(`pp-${k}`);if(el)el.classList.remove('won');});}
+function restorePrizes(p){Object.entries(p).forEach(([k,v])=>{if(v)markPrizePanelWon(k);});}
+
+// Slot machine
+function buildReel(reelEl,fd){
+  reelEl.innerHTML='';const seq=[];
+  for(let i=0;i<30;i++)seq.push(Math.floor(Math.random()*10));
+  seq.push(fd);
+  seq.forEach(d=>{const div=document.createElement('div');div.className='slot-digit';div.textContent=d;reelEl.appendChild(div);});
+  return seq.length;
+}
+function rollDrum(reelEl,drumEl,fd,dur,cb){
+  const count=buildReel(reelEl,fd);
+  const target=-(count-1)*50;
+  reelEl.style.transition='none';reelEl.style.top='0px';
+  void reelEl.offsetHeight;
+  reelEl.style.transition=`top ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94)`;
+  reelEl.style.top=target+'px';setTimeout(cb,dur);
+}
+function updateLastBall(n,col){
+  if(slotRolling)return;slotRolling=true;
+  const color=COL_COLORS[col];
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#555';badge.style.opacity='1';
+  const dT=document.getElementById('drum-tens'),dU=document.getElementById('drum-units');
+  dT.style.borderColor='#d4a93a';dU.style.borderColor='#d4a93a';
+  rollDrum(document.getElementById('reel-tens'),dT,Math.floor(n/10),1400,()=>{});
+  rollDrum(document.getElementById('reel-units'),dU,n%10,2000,()=>{
+    badge.textContent=col;badge.style.color=color;badge.style.borderColor=color;badge.style.boxShadow=`0 0 14px ${color}bb`;
+    dT.style.borderColor=color;dU.style.borderColor=color;
+    dT.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    dU.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    slotRolling=false;
+  });
+}
+function resetSlot(){
+  slotRolling=false;
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#444';badge.style.boxShadow='none';badge.style.opacity='1';
+  ['drum-tens','drum-units'].forEach(id=>{
+    const d=document.getElementById(id);if(d){d.style.borderColor='#d4a93a';d.style.boxShadow='';}
+    const r=d&&d.querySelector('.slot-reel');
+    if(r){r.style.transition='none';r.style.top='0px';r.innerHTML='<div class="slot-digit">—</div>';}
+  });
+}
+
+// Winner popup
+function showWinner(msg){
+  const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
+  document.getElementById('w-icon').textContent=info.icon;
+  document.getElementById('w-title').textContent=info.msg;
+  document.getElementById('w-name').textContent=msg.playerName||`Cartón ${msg.cardIdx+1}`;
+  document.getElementById('w-prize').textContent=info.prize;
+  document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 10s...';
   document.getElementById('winner-ov').classList.add('show');
-  if (isOurCard) launchFW();
-  if (msg.prize !== 'fullCard') setTimeout(closeWinner, 10000);
+  launchFW();
+  if(msg.prize!=='fullCard')setTimeout(closeWinner,10000);
 }
-
-function closeWinner() {
-  document.getElementById('winner-ov').classList.remove('show');
-  stopFW();
-}
+function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
 let fwAF,fwP=[],fwCtx;
 function launchFW(){
   const fc=document.getElementById('fwc');fc.width=window.innerWidth;fc.height=window.innerHeight;
   fwCtx=fc.getContext('2d');fwP=[];
   const cols=['#ffd700','#ff4488','#44ddff','#88ff44','#ff8800','#cc44ff'];
-  for(let i=0;i<160;i++) fwP.push({x:Math.random()*fc.width,y:Math.random()*fc.height*.7,
+  for(let i=0;i<160;i++)fwP.push({x:Math.random()*fc.width,y:Math.random()*fc.height*.7,
     vx:(Math.random()-.5)*9,vy:(Math.random()-.5)*9-4,r:Math.random()*5+2,
     c:cols[Math.floor(Math.random()*cols.length)],life:1,dec:Math.random()*.01+.006});
   fwAF=requestAnimationFrame(dFW);
@@ -453,10 +458,9 @@ function launchFW(){
 function dFW(){
   fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);
   fwP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.life-=p.dec;
-    fwCtx.globalAlpha=Math.max(0,p.life);fwCtx.beginPath();
-    fwCtx.arc(p.x,p.y,p.r,0,2*Math.PI);fwCtx.fillStyle=p.c;fwCtx.fill();});
+    fwCtx.globalAlpha=Math.max(0,p.life);fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.r,0,2*Math.PI);fwCtx.fillStyle=p.c;fwCtx.fill();});
   fwCtx.globalAlpha=1;fwP=fwP.filter(p=>p.life>0);
-  if(fwP.length) fwAF=requestAnimationFrame(dFW);
+  if(fwP.length)fwAF=requestAnimationFrame(dFW);
 }
 function stopFW(){cancelAnimationFrame(fwAF);if(fwCtx)fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);}
 </script>
