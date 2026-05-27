@@ -1,287 +1,745 @@
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const http = require('http');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>BINGO TAVAREZ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
+  height:100dvh;max-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+/* TOP BAR */
+#top-bar{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  padding:5px 12px;background:#0d0528;border-bottom:2px solid #d4a93a44;
+  flex-shrink:0;position:sticky;top:0;z-index:100;gap:8px;
+}
+#top-left{display:flex;flex-direction:column}
+#top-left h1{font-family:'Cinzel Decorative',serif;font-size:16px;
+  background:linear-gradient(180deg,#fff8e0,#ffd700);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+#local-name-display{font-size:9px;color:#d4a93a;letter-spacing:2px;margin-top:1px}
+/* Center: slot machine */
+#top-center{display:flex;align-items:center;justify-content:center;gap:6px}
+/* Right: countdown + prizes + conn */
+#top-right{display:flex;align-items:center;gap:6px}
 
-const PORT = process.env.PORT || 8080;
-const NUM_LOCALS = 10;
-const CARDS_PER_LOCAL = 21;
-const ROUND_MINUTES = 15;
+/* Countdown in top bar */
+#cd-wrap{display:flex;flex-direction:column;align-items:center;
+  background:#0a0220;border:2px solid #d4a93a55;border-radius:8px;padding:4px 10px}
+#cd-label{font-size:8px;color:#888;letter-spacing:2px;text-transform:uppercase}
+#cd-display{font-family:'Cinzel Decorative',serif;font-size:20px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 10px #ffd70055;line-height:1}
+#cd-display.urgent{color:#ff4444;animation:urgPulse .5s ease-in-out infinite alternate}
+@keyframes urgPulse{from{opacity:.6}to{opacity:1}}
 
-// ── GAME STATE ──────────────────────────────────────────────────────
-let gameState = {
-  drawnNumbers: [],
-  active: false,
-  cards: {},
-  prizes: {},        // { local_1: {L:false,T:false,...}, local_2: {...}, ... }
-  localNames: {},    // { local_1: "Bar El Rincón", ... }
-  countdown: null,   // seconds remaining until next auto-start
-  countdownActive: false
+/* Slot machine in top bar */
+#slot-wrap{display:flex;align-items:center;gap:4px}
+#slot-label{font-size:8px;color:#888;letter-spacing:1px;text-transform:uppercase;writing-mode:vertical-lr;transform:rotate(180deg)}
+#slot-machine{display:flex;align-items:center;gap:3px}
+.slot-drum{width:40px;height:50px;background:linear-gradient(180deg,#0a0220,#1a0640,#0a0220);
+  border:1.5px solid #d4a93a;border-radius:7px;overflow:hidden;position:relative;
+  box-shadow:0 0 10px rgba(212,169,58,.3),inset 0 0 8px rgba(0,0,0,.6);transition:border-color .3s,box-shadow .3s}
+.slot-drum::before,.slot-drum::after{content:'';position:absolute;left:0;right:0;height:14px;z-index:2;pointer-events:none}
+.slot-drum::before{top:0;background:linear-gradient(to bottom,#0a0220ee,transparent)}
+.slot-drum::after{bottom:0;background:linear-gradient(to top,#0a0220ee,transparent)}
+.slot-drum .center-line{position:absolute;top:50%;left:0;right:0;height:1.5px;background:#d4a93a88;z-index:3;transform:translateY(-50%);pointer-events:none}
+.slot-reel{display:flex;flex-direction:column;align-items:center;position:absolute;left:0;right:0;top:0;will-change:top}
+.slot-digit{height:50px;line-height:50px;font-family:'Cinzel Decorative',serif;font-size:22px;font-weight:900;color:#ffd700;text-align:center;width:100%;text-shadow:0 0 6px #ffd70066}
+#slot-letter{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;
+  padding:4px 10px;border-radius:7px;border:1.5px solid #555;
+  background:linear-gradient(135deg,#1a0840,#2d1060);min-width:34px;text-align:center;
+  transition:color .3s,border-color .3s,box-shadow .3s}
+
+#conn-dot{width:7px;height:7px;border-radius:50%;background:#ff4444;transition:background .3s}
+#conn-dot.ok{background:#44ff88}
+
+/* MAIN */
+#main{padding:6px 10px 4px;display:flex;flex-direction:column;gap:4px;flex:1}
+#subtitle{font-size:8px;color:#d4a93a55;letter-spacing:3px;text-align:center;text-transform:uppercase;line-height:1}
+#status-msg{font-size:10px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:14px;line-height:1.2}
+
+/* Cards */
+#cards-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#cards-wrapper{transform-origin:top left;transition:transform .2s ease;overflow:visible}
+
+.bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:1.5px solid #aabbdd;
+  border-radius:9px;padding:4px 4px 5px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 2px 6px rgba(0,0,80,.1)}
+.card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
+  font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:900;
+  width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1px solid #4466cc}
+.card-name-wrap input{width:100%;background:#f8faff;border:1px solid #aabbddaa;border-radius:5px;
+  color:#1a2a5a;font-family:'Cinzel',serif;font-size:9px;font-weight:700;
+  padding:2px 4px;outline:none;text-align:center}
+.card-header{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:1px}
+.card-header span{text-align:center;font-size:9px;font-weight:900;padding:1px 0;border-radius:3px;font-family:'Cinzel Decorative',serif}
+.ltr-B{color:#dd1144;background:#ff446622}.ltr-I{color:#cc8800;background:#ffaa0022}
+.ltr-N{color:#0099bb;background:#44ddff22}.ltr-G{color:#00aa44;background:#44ff8822}
+.ltr-O{color:#9900cc;background:#dd44ff22}
+.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:5px;
+  font-size:13px;font-weight:800;background:#eef2ff;border:1px solid #c0cce8;
+  color:#1a2a5a;position:relative;user-select:none}
+.cell.free{background:radial-gradient(circle,#3377ff,#0a44cc);color:#fff;font-size:6px;font-weight:900;border-color:#5599ff}
+.cell.marked{background:radial-gradient(circle,#cc1a00,#8b0000)!important;color:#ffd700!important;
+  border-color:#ff4400!important;box-shadow:0 0 8px rgba(255,60,0,.7)!important;transform:scale(.94);font-weight:900;font-size:15px!important}
+.cell.marked.free{background:radial-gradient(circle,#2266ff,#0a3399)!important;color:#fff!important;border-color:#4488ff!important}
+.cell.win-line{background:radial-gradient(circle,#00ffcc,#00aa88)!important;color:#000!important;
+  border-color:#00ffcc!important;box-shadow:0 0 14px rgba(0,255,200,.9)!important;font-weight:900!important;
+  animation:lineGlow 1s ease-in-out infinite alternate!important}
+.cell.win-full{background:radial-gradient(circle,#ffd700,#cc8800)!important;color:#000!important;
+  border-color:#ffd700!important;box-shadow:0 0 12px rgba(255,215,0,.95)!important;font-weight:900!important;
+  animation:fullGlow .8s ease-in-out infinite alternate!important}
+@keyframes lineGlow{from{box-shadow:0 0 6px rgba(0,255,200,.7)}to{box-shadow:0 0 20px rgba(0,255,200,1),0 0 5px #fff}}
+@keyframes fullGlow{from{box-shadow:0 0 6px rgba(255,215,0,.7)}to{box-shadow:0 0 20px rgba(255,215,0,1),0 0 5px #fff8}}
+.bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 24px rgba(255,215,0,.8)}
+@keyframes winFlash{0%,100%{background:linear-gradient(160deg,#fff,#f0f4ff)}50%{background:linear-gradient(160deg,#fff8d0,#ffeea0)}}
+
+/* Ticker bar — prizes from other locals */
+#ticker-bar{
+  background:linear-gradient(135deg,#0a0220cc,#1a0640cc);
+  border:1px solid #d4a93a44; border-radius:8px;
+  padding:4px 10px; overflow:hidden; flex-shrink:0;
+  display:none; position:relative;
+}
+#ticker-bar.show{display:block}
+#ticker-inner{
+  display:flex; align-items:center; gap:0;
+  white-space:nowrap;
+  animation:tickerScroll 20s linear infinite;
+}
+#ticker-inner:empty{animation:none}
+.ticker-item{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:0 18px; font-size:11px; color:#d4a93a;
+  font-family:'Cinzel',serif; letter-spacing:1px;
+}
+.ticker-item .ti-icon{font-size:13px}
+.ticker-item .ti-local{color:#fff;font-weight:700}
+.ticker-item .ti-prize{color:#ffd700;font-weight:900}
+.ticker-sep{color:#d4a93a44;padding:0 4px}
+@keyframes tickerScroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+
+/* Waiting */
+#waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:16px;text-align:center}
+#waiting h2{font-family:'Cinzel Decorative',serif;font-size:26px;color:#ffd700;
+  text-shadow:0 0 18px #ffd70066;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* Buena Suerte overlay */
+#buena-suerte-ov{position:fixed;inset:0;background:#000c;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  z-index:2000;opacity:0;pointer-events:none;transition:opacity .5s}
+#buena-suerte-ov.show{opacity:1}
+#bs-text{font-family:'Cinzel Decorative',serif;font-size:72px;font-weight:900;text-align:center;
+  background:linear-gradient(135deg,#fff8e0,#ffd700,#ff8c00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 30px rgba(255,200,0,0.8));
+  animation:bsZoom .6s cubic-bezier(.175,.885,.32,1.275) forwards;line-height:1.1}
+#bs-local{font-family:'Cinzel',serif;font-size:28px;color:#fff;margin-top:10px;
+  text-shadow:0 0 16px #ffd70066;letter-spacing:3px}
+@keyframes bsZoom{0%{transform:scale(0) rotate(-5deg)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+/* X2 lucky cell */
+/* X2 — badge inside the cell, no color change */
+.cell.x2-lucky{
+  position:relative !important;
+}
+.cell.x2-lucky::after{
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
+  font-family:'Cinzel Decorative',serif;
+  box-shadow:0 0 5px #ffd70088; z-index:5;
+  pointer-events:none;
+}
+/* Keep ×2 badge when marked */
+.cell.x2-marked{
+  position:relative !important;
+}
+.cell.x2-marked::after{
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
+  font-family:'Cinzel Decorative',serif;
+  box-shadow:0 0 6px #ffd700cc; z-index:5;
+  pointer-events:none;
+}
+
+/* Prize panel — small horizontal strip in top-right */
+#prize-panel{display:flex;align-items:center;gap:3px}
+.prize-item{display:flex;align-items:center;gap:2px;padding:2px 5px;
+  border-radius:5px;border:1px solid;font-size:9px;white-space:nowrap;transition:opacity .3s}
+.prize-item .pi-icon{font-size:10px}
+.prize-item .pi-val{color:inherit;font-weight:700}
+.prize-item.won{opacity:.25;text-decoration:line-through}
+
+/* Winner overlay */
+#winner-ov{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s}
+#winner-ov.show{opacity:1;pointer-events:all}
+#winner-box{background:radial-gradient(circle at 40% 30%,#2d1060,#0a0510);border:5px solid #ffd700;
+  border-radius:28px;padding:50px 80px;text-align:center;
+  transform:scale(.5);transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+  font-family:'Cinzel Decorative',serif;box-shadow:0 0 80px rgba(255,215,0,.4)}
+#winner-ov.show #winner-box{transform:scale(1)}
+#w-icon{font-size:70px;margin-bottom:10px}
+#w-title{font-size:28px;color:#d4a93a;margin-bottom:6px}
+#w-name{font-size:36px;color:#ffd700;margin-bottom:10px;text-shadow:0 0 20px #ffd70099}
+#w-prize{font-size:90px;font-weight:900;color:#ffd700;line-height:1;text-shadow:0 0 30px #ffd70099}
+#w-sub{font-size:18px;color:#aaa;margin-top:10px}
+#w-close{margin-top:24px;padding:14px 48px;font-family:'Cinzel',serif;font-size:17px;font-weight:700;
+  background:linear-gradient(135deg,#d4a93a,#ffd700);color:#0a0510;border:none;border-radius:12px;cursor:pointer}
+#fwc{position:fixed;inset:0;pointer-events:none;z-index:999}
+</style>
+</head>
+<body>
+<canvas id="fwc"></canvas>
+
+<!-- Buena Suerte overlay -->
+<div id="buena-suerte-ov">
+  <div id="bs-text">✦ ¡BUENA SUERTE! ✦</div>
+  <div id="bs-local"></div>
+</div>
+
+<div id="top-bar">
+  <!-- LEFT: title + local name -->
+  <div id="top-left">
+    <h1>✦ BINGO TAVAREZ ✦</h1>
+    <div id="local-name-display">Conectando...</div>
+  </div>
+
+  <!-- CENTER: slot machine bolillero -->
+  <div id="top-center">
+    <div style="font-size:8px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-right:2px">Último</div>
+    <div id="slot-machine">
+      <div id="slot-letter" style="color:#555;border-color:#444">?</div>
+      <div class="slot-drum" id="drum-tens"><div class="slot-reel" id="reel-tens"></div><div class="center-line"></div></div>
+      <div class="slot-drum" id="drum-units"><div class="slot-reel" id="reel-units"></div><div class="center-line"></div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: countdown + prizes + dot -->
+  <div id="top-right">
+    <div id="cd-wrap">
+      <div id="cd-label">Próxima</div>
+      <div id="cd-display">--:--</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
+      <div id="prize-panel">
+      <div class="prize-item" id="pp-L" style="color:#ffbb00;border-color:#ffbb0055"><span class="pi-icon">🏅</span><span class="pi-val">L $15</span></div>
+      <div class="prize-item" id="pp-T" style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🏅</span><span class="pi-val">T $15</span></div>
+      <div class="prize-item" id="pp-X" style="color:#ff88aa;border-color:#ff88aa55"><span class="pi-icon">🏅</span><span class="pi-val">X $15</span></div>
+      <div class="prize-item" id="pp-CRUZ" style="color:#88ffff;border-color:#88ffff55"><span class="pi-icon">✝️</span><span class="pi-val">$15</span></div>
+      <div class="prize-item" id="pp-line" style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">🏆</span><span class="pi-val">$50</span></div>
+      <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">$100</span></div>
+      </div>
+    </div>
+    <div id="conn-dot"></div>
+  </div>
+</div>
+
+<div id="main" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+  <div id="subtitle">by Lotronica</div>
+  <div id="status-msg">⏳ Esperando conexión...</div>
+
+  <!-- Ticker bar: prizes from other locals -->
+  <div id="ticker-bar">
+    <div id="ticker-inner"></div>
+  </div>
+
+  <div id="waiting">
+    <h2>⏳ Esperando Partida</h2>
+    <p style="color:#888;font-size:12px;letter-spacing:2px">El host iniciará el juego en breve</p>
+  </div>
+  <div id="cards-wrapper"><div id="cards-grid" style="display:none"></div></div>
+</div>
+
+<div id="winner-ov">
+  <div id="winner-box">
+    <div id="w-icon">🏆</div>
+    <div id="w-title"></div>
+    <div id="w-name"></div>
+    <div id="w-prize"></div>
+    <div id="w-sub"></div>
+    <button id="w-close" onclick="closeWinner()">Continuar</button>
+  </div>
+</div>
+
+<script>
+const pathParts=window.location.pathname.split('/');
+const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
+
+const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
+const PRIZES_INFO={
+  L:{icon:'🏅',color:'#ffbb00',msg:'¡FIGURA L!',prize:'$15'},
+  T:{icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',prize:'$15'},
+  X:{icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',prize:'$15'},
+  CRUZ:{icon:'✝️',color:'#88ffff',msg:'¡LA CRUZ!',prize:'$15'},
+  line:{icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',prize:'$50'},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prize:'$100'},
+};
+const PATTERNS={
+  L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
+  T:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,2],[2,2],[3,2],[4,2]],
+  X:[[1,1],[1,3],[3,1],[3,3]],
+  CRUZ:[[1,2],[2,1],[2,3],[3,2]],
 };
 
-// Init prizes per local
-function initPrizes() {
-  const p = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    p[`local_${i}`] = { L:false, T:false, X:false, CRUZ:false, line:false, fullCard:false };
-  }
-  return p;
+let cardsData=[], drawnNums=new Set();
+let prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+const highlightedLines=new Set();
+let slotRolling=false;
+let countdownTotal=900;
+
+// Countdown
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function updateCD(s){
+  const el=document.getElementById('cd-display');
+  el.textContent=fmtTime(s);el.className=s<=60?'urgent':'';
 }
 
-// Init local names
-function initLocalNames() {
-  const n = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) n[`local_${i}`] = `Local ${i}`;
-  return n;
+// WebSocket
+const wsUrl=location.protocol==='https:'?`wss://${location.host}`:`ws://${location.host}`;
+let ws;
+function connect(){
+  ws=new WebSocket(wsUrl);
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({type:'join_local',localId:LOCAL_ID}));
+    document.getElementById('conn-dot').classList.add('ok');
+    setStatus('Conectado ✓');
+  };
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    switch(msg.type){
+      case 'state':
+        if(msg.localName)setLocalName(msg.localName);
+        if(msg.state&&msg.state.localNames) allLocalNames=msg.state.localNames;
+        if(msg.cards&&msg.cards.length){
+          loadCards(msg.cards);
+          if(msg.state&&msg.state.drawnNumbers)msg.state.drawnNumbers.forEach(n=>markNumber(n,false));
+        }
+        if(msg.prizes)restorePrizes(msg.prizes);
+        if(msg.countdownActive&&msg.countdown)updateCD(msg.countdown);
+        break;
+      case 'new_game':
+        gameOver=false;
+        tickerItems.length=0;
+        document.getElementById('ticker-bar').classList.remove('show');
+        loadCards(msg.cards);
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        highlightedLines.clear();
+        x2Number = pickX2Number(msg.cards);
+        resetPrizePanel();resetSlot();updateCD(900);
+        setStatus('¡Nueva partida! 🎉');
+        if(msg.localName) localName = msg.localName;
+        setTimeout(() => { showBuenaSuerte(localName); }, 300);
+        setTimeout(() => applyX2Cells(), 400);
+        break;
+      case 'draw':
+        drawnNums.add(msg.n);updateLastBall(msg.n,getCol(msg.n));
+        setTimeout(()=>markNumber(msg.n,true),2300);break;
+      case 'prize_won':
+        if(msg.localId === LOCAL_ID) {
+          // OUR local won — update prize panel + show winner popup
+          prizes[msg.prize] = true;
+          markPrizePanelWon(msg.prize);
+          showWinner(msg);
+        } else {
+          // ANOTHER local won — only show in ticker
+          addTickerItem(msg);
+        }
+        break;
+      case 'name_update': setLocalName(msg.name);break;
+      case 'locals_update':
+        if(msg.names) allLocalNames = msg.names;
+        break;
+      case 'countdown': updateCD(msg.seconds);break;
+      case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
+      case 'reset':
+        gameOver=false;
+        x2Number=null;
+        loadCards(msg.cards);
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        highlightedLines.clear();resetPrizePanel();resetSlot();
+        setStatus('Partida reseteada');break;
+    }
+  };
+  ws.onclose=()=>{document.getElementById('conn-dot').classList.remove('ok');setStatus('Desconectado...');setTimeout(connect,2000);};
+}
+connect();
+
+function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+function setLocalName(name){
+  document.getElementById('local-name-display').textContent=name;
+  document.title=`${name} - Bingo Tavarez`;
+}
+function getCol(n){if(n<=15)return 'B';if(n<=30)return 'I';if(n<=45)return 'N';if(n<=60)return 'G';return 'O';}
+
+// Load cards
+function loadCards(cards){
+  cardsData=cards;
+  document.getElementById('waiting').style.display='none';
+  const grid=document.getElementById('cards-grid');
+  grid.style.display='grid';grid.innerHTML='';
+  cards.forEach((card,ci)=>{
+    const cardEl=document.createElement('div');
+    cardEl.className='bingo-card';cardEl.id=`card-${ci}`;
+    const nw=document.createElement('div');nw.className='card-name-wrap';
+    const badge=document.createElement('div');badge.className='card-num-badge';
+    badge.textContent=ci+1; // always 1-15
+    const inp=document.createElement('input');inp.type='text';
+    inp.placeholder=`Jugador ${ci+1}`;inp.id=`name-${ci}`;inp.maxLength=20;
+    nw.appendChild(badge);nw.appendChild(inp);cardEl.appendChild(nw);
+    const hdr=document.createElement('div');hdr.className='card-header';
+    ['B','I','N','G','O'].forEach(l=>{const s=document.createElement('span');s.className=`ltr-${l}`;s.textContent=l;hdr.appendChild(s);});
+    cardEl.appendChild(hdr);
+    const cg=document.createElement('div');cg.className='card-grid';
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const cell=document.createElement('div');cell.className='cell';cell.id=`cell-${ci}-${r}-${c}`;
+      if(r===2&&c===2){cell.classList.add('free','marked');cell.textContent='FREE';}
+      else{cell.textContent=card[r][c];cell.dataset.num=card[r][c];}
+      cg.appendChild(cell);
+    }
+    cardEl.appendChild(cg);grid.appendChild(cardEl);
+  });
+  setStatus(`${cards.length} cartones listos 🍀`);
+  setTimeout(autoFit, 100); // fit all cards in screen after render
 }
 
-gameState.prizes = initPrizes();
-gameState.localNames = initLocalNames();
+function autoFit() {
+  const wrapper = document.getElementById('cards-wrapper');
+  const grid    = document.getElementById('cards-grid');
+  if (!wrapper || !grid || grid.style.display === 'none') return;
 
-// ── CARD GENERATOR ──────────────────────────────────────────────────
-function pickRandom(lo, hi, count) {
-  const pool = [];
-  for (let i = lo; i <= hi; i++) pool.push(i);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, count);
+  // Step 1: Remove any existing transform so grid renders at natural size
+  wrapper.style.cssText = 'transform:none;width:auto;height:auto;overflow:visible';
+
+  // Step 2: Measure after a tiny delay so browser finishes layout
+  setTimeout(() => {
+    const gridNatW = grid.offsetWidth;
+    const gridNatH = grid.offsetHeight;
+    if (!gridNatW || !gridNatH) return;
+
+    // Step 3: Measure EXACT occupied space above the cards
+    const topBar   = document.getElementById('top-bar');
+    const subtitle = document.getElementById('subtitle');
+    const status   = document.getElementById('status-msg');
+    const ticker   = document.getElementById('ticker-bar');
+    const mainEl   = document.getElementById('main');
+
+    let usedH = 0;
+    if (topBar)   usedH += topBar.offsetHeight;
+    if (subtitle) usedH += subtitle.offsetHeight + 4;
+    if (status)   usedH += status.offsetHeight + 4;
+    if (ticker)   usedH += ticker.offsetHeight + 4;
+
+    // Main padding
+    const mst = mainEl ? window.getComputedStyle(mainEl) : null;
+    if (mst) usedH += parseFloat(mst.paddingTop||0) + parseFloat(mst.paddingBottom||0);
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const availW = vw - 8;
+    const availH = vh - usedH - 8;
+
+    if (availW <= 0 || availH <= 0) return;
+
+    const scaleW = availW / gridNatW;
+    const scaleH = availH / gridNatH;
+    const scale  = Math.min(scaleW, scaleH); // fill as much as possible
+
+    wrapper.style.cssText = [
+      'transform-origin:top left',
+      `transform:scale(${scale})`,
+      `width:${Math.round(gridNatW * scale)}px`,
+      `height:${Math.round(gridNatH * scale)}px`,
+      'overflow:visible',
+    ].join(';');
+  }, 30);
 }
 
-function makeCard() {
-  const cols = [
-    pickRandom(1,15,5), pickRandom(16,30,5), pickRandom(31,45,5),
-    pickRandom(46,60,5), pickRandom(61,75,5),
+window.addEventListener('resize', () => {
+  clearTimeout(window._fitTimer);
+  window._fitTimer = setTimeout(autoFit, 80);
+});
+
+// Stop all marking once fullCard is won in this local
+let gameOver    = false;
+let allLocalNames = {}; // updated from server
+const tickerItems = []; // prize history for ticker
+
+const PRIZES_INFO_TICKER = {
+  L:       {icon:'🏅', label:'Figura L',    prize:'$15'},
+  T:       {icon:'🏅', label:'Figura T',    prize:'$15'},
+  X:       {icon:'🏅', label:'Figura X',    prize:'$15'},
+  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$15'},
+  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$50'},
+  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$100'},
+};
+
+function addTickerItem(msg) {
+  const info   = PRIZES_INFO_TICKER[msg.prize] || PRIZES_INFO_TICKER.line;
+  const lname  = allLocalNames[`local_${msg.localId}`] || `Local ${msg.localId}`;
+  const player = msg.playerName || `Cartón ${msg.cardIdx+1}`;
+  const x2txt  = msg.x2 ? ' ×2' : '';
+  tickerItems.push(`${info.icon} <b style="color:#fff">${lname}</b> — ${player} ganó <b style="color:#ffd700">${info.prize}${x2txt}</b> (${info.label})`);
+  renderTicker();
+}
+
+function renderTicker() {
+  if (!tickerItems.length) return;
+  const bar   = document.getElementById('ticker-bar');
+  const inner = document.getElementById('ticker-inner');
+  bar.classList.add('show');
+  // Duplicate items for seamless loop
+  const html = [...tickerItems, ...tickerItems].map(t =>
+    `<span class="ticker-item">${t}</span><span class="ticker-sep">✦</span>`
+  ).join('');
+  inner.innerHTML = html;
+  // Adjust animation speed based on content length
+  const totalW = inner.scrollWidth / 2;
+  const speed  = Math.max(15, totalW / 60); // px per second roughly
+  inner.style.animationDuration = speed + 's';
+  autoFit(); // refit after ticker shows
+}
+let x2Number  = null;   // the lucky x2 number for this local
+let localName = '';     // this local's name
+
+// Show "Buena Suerte" overlay for 3 seconds
+function showBuenaSuerte(name) {
+  const ov  = document.getElementById('buena-suerte-ov');
+  const lbl = document.getElementById('bs-local');
+  lbl.textContent = name ? `a todos en ${name}` : '';
+  ov.classList.add('show');
+  launchFW();
+  setTimeout(() => { ov.classList.remove('show'); stopFW(); }, 3000);
+}
+
+// Pick a random non-FREE cell number from the cards as the x2 lucky number
+function pickX2Number(cards) {
+  const allNums = [];
+  cards.forEach(card => {
+    for (let r = 0; r < 5; r++)
+      for (let c = 0; c < 5; c++)
+        if (!(r===2&&c===2)) allNums.push(card[r][c]);
+  });
+  return allNums[Math.floor(Math.random() * allNums.length)];
+}
+
+// Highlight x2 cells on all cards
+function applyX2Cells() {
+  if (!x2Number) return;
+  document.querySelectorAll('.cell').forEach(el => {
+    if (parseInt(el.dataset.num) === x2Number) {
+      if (!el.classList.contains('marked')) {
+        el.classList.add('x2-lucky');
+      }
+    }
+  });
+}
+
+// Mark number
+function markNumber(n,animate){
+  if(gameOver) return; // fullCard won — stop marking
+  cardsData.forEach((_,ci)=>{
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+      if(el&&parseInt(el.dataset.num)===n){
+        const isX2 = (parseInt(el.dataset.num) === x2Number);
+        el.classList.remove('x2-lucky');
+        el.classList.add('marked');
+        if(isX2) el.classList.add('x2-marked');
+        if(animate) flashCell(el);
+      }
+    }
+    checkWin(ci);
+  });
+}
+
+function flashCell(el){
+  if(!el)return;
+  el.style.position='relative';el.style.zIndex='10';
+  const frames=[
+    {transform:'scale(1.35)',boxShadow:'0 0 0 4px #ffd700,0 0 18px #ffd700',filter:'brightness(2)',offset:0},
+    {transform:'scale(1.18)',boxShadow:'0 0 0 3px #ff8800,0 0 12px #ff8800',filter:'brightness(1.5)',offset:.2},
+    {transform:'scale(1.08)',boxShadow:'0 0 0 2px #ff4400,0 0 8px #ff4400',filter:'brightness(1.2)',offset:.45},
+    {transform:'scale(.96)',boxShadow:'0 0 7px rgba(255,60,0,.8)',filter:'brightness(1)',offset:.7},
+    {transform:'scale(.94)',boxShadow:'0 0 8px rgba(255,60,0,.7)',filter:'brightness(1)',offset:1},
   ];
-  const grid = [];
-  for (let r = 0; r < 5; r++) {
-    const row = [];
-    for (let c = 0; c < 5; c++) {
-      if (r === 2 && c === 2) row.push(0);
-      else row.push(cols[c][r]);
-    }
-    grid.push(row);
-  }
-  return grid;
+  const anim=el.animate(frames,{duration:1400,easing:'ease-out',fill:'forwards'});
+  anim.onfinish=()=>{el.style.zIndex='';el.style.position='';};
+  const ring=document.createElement('div');
+  ring.style.cssText='position:absolute;inset:-4px;border-radius:7px;pointer-events:none;border:2.5px solid #ffd700;z-index:20;';
+  el.appendChild(ring);
+  ring.animate([
+    {opacity:1,transform:'scale(1)',borderColor:'#ffd700'},
+    {opacity:.7,transform:'scale(1.5)',borderColor:'#ff8800'},
+    {opacity:0,transform:'scale(2.2)',borderColor:'#ff4400'},
+  ],{duration:750,easing:'ease-out',fill:'forwards'}).onfinish=()=>ring.remove();
 }
 
-function generateAllCards() {
-  const cards = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    cards[`local_${i}`] = [];
-    for (let j = 0; j < CARDS_PER_LOCAL; j++) cards[`local_${i}`].push(makeCard());
-  }
-  return cards;
-}
-
-// ── COUNTDOWN TIMER ─────────────────────────────────────────────────
-let countdownInterval = null;
-let countdownSeconds = ROUND_MINUTES * 60;
-
-function startCountdown(seconds = ROUND_MINUTES * 60) {
-  countdownSeconds = seconds;
-  gameState.countdownActive = true;
-  if (countdownInterval) clearInterval(countdownInterval);
-  countdownInterval = setInterval(() => {
-    countdownSeconds--;
-    broadcastAll({ type: 'countdown', seconds: countdownSeconds });
-    if (countdownSeconds <= 0) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-      // Auto start new game
-      startNewGame();
-    }
-  }, 1000);
-}
-
-function stopCountdown() {
-  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-  gameState.countdownActive = false;
-  broadcastAll({ type: 'countdown_stopped' });
-}
-
-// ── CONNECTED CLIENTS ────────────────────────────────────────────────
-const clients = new Map();
-
-function broadcastAll(data, excludeWs = null) {
-  const msg = JSON.stringify(data);
-  clients.forEach((info, ws) => {
-    if (ws !== excludeWs && ws.readyState === 1) ws.send(msg);
-  });
-}
-
-function broadcastToLocal(localId, data) {
-  const msg = JSON.stringify(data);
-  clients.forEach((info, ws) => {
-    if (info.localId === localId && ws.readyState === 1) ws.send(msg);
-  });
-}
-
-function sendTo(ws, data) {
-  if (ws.readyState === 1) ws.send(JSON.stringify(data));
-}
-
-function getConnectedLocals() {
-  const set = new Set();
-  clients.forEach(info => { if (info.role === 'local') set.add(info.localId); });
-  return [...set].sort((a,b) => a-b);
-}
-
-function broadcastLocalsUpdate() {
-  broadcastAll({ type: 'locals_update', connected: getConnectedLocals(), names: gameState.localNames });
-}
-
-// ── START NEW GAME ───────────────────────────────────────────────────
-function startNewGame() {
-  gameState.drawnNumbers = [];
-  gameState.active = true;
-  gameState.cards = generateAllCards();
-  gameState.prizes = initPrizes();
-
-  // Send each local their new cards
-  clients.forEach((info, ws) => {
-    if (info.role === 'local') {
-      sendTo(ws, {
-        type: 'new_game',
-        cards: gameState.cards[`local_${info.localId}`] || [],
-        drawnNumbers: [],
-        localName: gameState.localNames[`local_${info.localId}`]
-      });
-    }
-  });
-  sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
-
-  // Countdown starts automatically when all 75 balls are drawn (see 'draw' case)
-}
-
-function getHostWs() {
-  for (const [ws, info] of clients) {
-    if (info.role === 'host' && ws.readyState === 1) return ws;
-  }
+// Win detection
+function isMarked(ci,r,c){if(r===2&&c===2)return true;const el=document.getElementById(`cell-${ci}-${r}-${c}`);return el&&el.classList.contains('marked');}
+function hasLine(ci){
+  for(let r=0;r<5;r++)if([0,1,2,3,4].every(c=>isMarked(ci,r,c)))return{type:'row',idx:r};
+  for(let c=0;c<5;c++)if([0,1,2,3,4].every(r=>isMarked(ci,r,c)))return{type:'col',idx:c};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,i)))return{type:'diag',idx:0};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,4-i)))return{type:'diag',idx:1};
   return null;
 }
+function hasFullCard(ci){for(let r=0;r<5;r++)for(let c=0;c<5;c++)if(!isMarked(ci,r,c))return false;return true;}
+function hasPattern(ci,name){return PATTERNS[name].every(([r,c])=>isMarked(ci,r,c));}
 
-// ── WEBSOCKET HANDLER ─────────────────────────────────────────────────
-wss.on('connection', (ws, req) => {
-  ws.on('message', (raw) => {
-    let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
+function highlightLine(ci,line){
+  const key=`${ci}-${line.type}-${line.idx}`;if(highlightedLines.has(key))return;highlightedLines.add(key);
+  const cells=[];
+  if(line.type==='row')for(let c=0;c<5;c++)cells.push([line.idx,c]);
+  else if(line.type==='col')for(let r=0;r<5;r++)cells.push([r,line.idx]);
+  else for(let i=0;i<5;i++)cells.push([i,line.idx===0?i:4-i]);
+  cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
+}
 
-    switch (msg.type) {
-      case 'join_host':
-        clients.set(ws, { role: 'host' });
-        sendTo(ws, {
-          type: 'state', state: gameState,
-          countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive
-        });
-        broadcastLocalsUpdate();
-        break;
+function isInLine(ci, line, num) {
+  // Check if num appears in the winning line cells
+  const cells = [];
+  if (line.type==='row') for(let c=0;c<5;c++) cells.push([line.idx,c]);
+  else if (line.type==='col') for(let r=0;r<5;r++) cells.push([r,line.idx]);
+  else for(let i=0;i<5;i++) cells.push([i, line.idx===0?i:4-i]);
+  return cells.some(([r,c]) => {
+    const el = document.getElementById(`cell-${ci}-${r}-${c}`);
+    return el && parseInt(el.dataset.num) === num;
+  });
+}
 
-      case 'join_local':
-        clients.set(ws, { role: 'local', localId: msg.localId });
-        sendTo(ws, {
-          type: 'state',
-          state: gameState,
-          cards: gameState.cards[`local_${msg.localId}`] || [],
-          prizes: gameState.prizes[`local_${msg.localId}`] || {},
-          localName: gameState.localNames[`local_${msg.localId}`],
-          countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive
-        });
-        broadcastLocalsUpdate();
-        break;
-
-      case 'new_game':
-        startNewGame();
-        break;
-
-      case 'draw':
-        if (!gameState.drawnNumbers.includes(msg.n)) {
-          gameState.drawnNumbers.push(msg.n);
-          broadcastAll({ type: 'draw', n: msg.n });
-          // If ALL 75 balls drawn, start countdown for next game
-          if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-            console.log('All 75 balls drawn — starting 15-min countdown');
-            startCountdown(ROUND_MINUTES * 60);
-            broadcastAll({ type: 'countdown', seconds: ROUND_MINUTES * 60 });
-          }
-        }
-        break;
-
-      case 'prize_won':
-        // Prizes are per-local — only update and notify that specific local
-        const localKey = `local_${msg.localId}`;
-        if (gameState.prizes[localKey] && !gameState.prizes[localKey][msg.prize]) {
-          gameState.prizes[localKey][msg.prize] = { cardIdx: msg.cardIdx, playerName: msg.playerName };
-          // Broadcast to ALL locals + host so ticker shows on every screen
-          const prizeMsg = {
-            type: 'prize_won',
-            prize: msg.prize,
-            localId: msg.localId,
-            cardIdx: msg.cardIdx,
-            playerName: msg.playerName,
-            x2: msg.x2 || false
-          };
-          broadcastAll(prizeMsg); // sends to every connected client including all locals
-        }
-        break;
-
-      case 'set_local_name':
-        gameState.localNames[`local_${msg.localId}`] = msg.name;
-        broadcastLocalsUpdate();
-        // Notify that local of their new name
-        broadcastToLocal(msg.localId, { type: 'name_update', name: msg.name });
-        break;
-
-      case 'start_countdown':
-        startCountdown(msg.seconds || ROUND_MINUTES * 60);
-        broadcastAll({ type: 'countdown', seconds: countdownSeconds });
-        break;
-
-      case 'stop_countdown':
-        stopCountdown();
-        break;
-
-      case 'reset':
-        stopCountdown();
-        gameState.drawnNumbers = [];
-        gameState.prizes = initPrizes();
-        gameState.cards = generateAllCards();
-        clients.forEach((info, client) => {
-          if (info.role === 'local') {
-            sendTo(client, {
-              type: 'reset',
-              cards: gameState.cards[`local_${info.localId}`] || [],
-              prizes: gameState.prizes[`local_${info.localId}`]
-            });
-          }
-        });
-        sendTo(ws, { type: 'reset_confirmed', state: gameState });
-        break;
-
-      case 'ping':
-        sendTo(ws, { type: 'pong' });
-        break;
+function checkWin(ci){
+  if(prizes.fullCard)return;
+  if(prizes.line&&hasFullCard(ci)){
+    prizes.fullCard=true;
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
+    const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+    gameOver = true; // stop all further marking in this local
+    ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name}));
+    return;
+  }
+  if(!prizes.line){
+    const line=hasLine(ci);
+    if(line){prizes.line=true;highlightLine(ci,line);
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      const isX2Win = x2Number && drawnNums.has(x2Number) && isInLine(ci, line, x2Number);
+      ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isX2Win}));return;}
+  }
+  for(const shape of['L','T','X','CRUZ']){
+    if(!prizes[shape]&&hasPattern(ci,shape)){
+      prizes[shape]=true;
+      const PCOLS={L:'#ffd700',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+        if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name}));return;
     }
+  }
+}
+
+// Prize panel
+function markPrizePanelWon(prize){const el=document.getElementById(`pp-${prize}`);if(el)el.classList.add('won');}
+function resetPrizePanel(){Object.keys(prizes).forEach(k=>{const el=document.getElementById(`pp-${k}`);if(el)el.classList.remove('won');});}
+function restorePrizes(p){Object.entries(p).forEach(([k,v])=>{if(v)markPrizePanelWon(k);});}
+
+// Slot machine
+function buildReel(reelEl,fd){
+  reelEl.innerHTML='';const seq=[];
+  for(let i=0;i<30;i++)seq.push(Math.floor(Math.random()*10));
+  seq.push(fd);
+  seq.forEach(d=>{const div=document.createElement('div');div.className='slot-digit';div.textContent=d;reelEl.appendChild(div);});
+  return seq.length;
+}
+function rollDrum(reelEl,drumEl,fd,dur,cb){
+  const count=buildReel(reelEl,fd);
+  const target=-(count-1)*50;
+  reelEl.style.transition='none';reelEl.style.top='0px';
+  void reelEl.offsetHeight;
+  reelEl.style.transition=`top ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94)`;
+  reelEl.style.top=target+'px';setTimeout(cb,dur);
+}
+function updateLastBall(n,col){
+  if(slotRolling)return;slotRolling=true;
+  const color=COL_COLORS[col];
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#555';badge.style.opacity='1';
+  const dT=document.getElementById('drum-tens'),dU=document.getElementById('drum-units');
+  dT.style.borderColor='#d4a93a';dU.style.borderColor='#d4a93a';
+  rollDrum(document.getElementById('reel-tens'),dT,Math.floor(n/10),1400,()=>{});
+  rollDrum(document.getElementById('reel-units'),dU,n%10,2000,()=>{
+    badge.textContent=col;badge.style.color=color;badge.style.borderColor=color;badge.style.boxShadow=`0 0 14px ${color}bb`;
+    dT.style.borderColor=color;dU.style.borderColor=color;
+    dT.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    dU.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    slotRolling=false;
   });
-
-  ws.on('close', () => {
-    clients.delete(ws);
-    broadcastLocalsUpdate();
+}
+function resetSlot(){
+  slotRolling=false;
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#444';badge.style.boxShadow='none';badge.style.opacity='1';
+  ['drum-tens','drum-units'].forEach(id=>{
+    const d=document.getElementById(id);if(d){d.style.borderColor='#d4a93a';d.style.boxShadow='';}
+    const r=d&&d.querySelector('.slot-reel');
+    if(r){r.style.transition='none';r.style.top='0px';r.innerHTML='<div class="slot-digit">—</div>';}
   });
-});
+}
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('/host', (req, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
-app.get('/local/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'local.html')));
-app.get('/', (req, res) => res.redirect('/host'));
+// Winner popup
+function showWinner(msg){
+  const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
+  document.getElementById('w-icon').textContent=msg.x2?'✨':''+info.icon;
+  document.getElementById('w-title').textContent=msg.x2?info.msg+' ×2!':info.msg;
+  document.getElementById('w-name').textContent=msg.playerName||`Cartón ${msg.cardIdx+1}`;
+  // If x2, double the prize display
+  const prizeAmt = msg.x2 ? info.prize.replace(/\d+/, n => parseInt(n)*2) : info.prize;
+  document.getElementById('w-prize').textContent=prizeAmt+(msg.x2?' 🌟':'');
+  document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL! 🎉':'Continúa en 3s...';
+  document.getElementById('winner-ov').classList.add('show');
+  launchFW();
+  clearTimeout(window._winnerTimer);
+  if(msg.prize==='fullCard') window._winnerTimer = setTimeout(closeWinner, 60000);
+  else window._winnerTimer = setTimeout(closeWinner, 3000);
+}
+function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
-server.listen(PORT, () => {
-  console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
-});
+let fwAF,fwP=[],fwCtx;
+function launchFW(){
+  const fc=document.getElementById('fwc');fc.width=window.innerWidth;fc.height=window.innerHeight;
+  fwCtx=fc.getContext('2d');fwP=[];
+  const cols=['#ffd700','#ff4488','#44ddff','#88ff44','#ff8800','#cc44ff'];
+  for(let i=0;i<160;i++)fwP.push({x:Math.random()*fc.width,y:Math.random()*fc.height*.7,
+    vx:(Math.random()-.5)*9,vy:(Math.random()-.5)*9-4,r:Math.random()*5+2,
+    c:cols[Math.floor(Math.random()*cols.length)],life:1,dec:Math.random()*.01+.006});
+  fwAF=requestAnimationFrame(dFW);
+}
+function dFW(){
+  fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);
+  fwP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.life-=p.dec;
+    fwCtx.globalAlpha=Math.max(0,p.life);fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.r,0,2*Math.PI);fwCtx.fillStyle=p.c;fwCtx.fill();});
+  fwCtx.globalAlpha=1;fwP=fwP.filter(p=>p.life>0);
+  if(fwP.length)fwAF=requestAnimationFrame(dFW);
+}
+function stopFW(){cancelAnimationFrame(fwAF);if(fwCtx)fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);}
+</script>
+</body>
+</html>
