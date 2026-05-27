@@ -427,7 +427,7 @@ function showWinner(msg){
   document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL!':'Continúa en 10s...';
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
-  if(msg.prize!=='fullCard')setTimeout(closeWinner,10000);
+  if(msg.prize!=='fullCard')setTimeout(closeWinner,3000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
