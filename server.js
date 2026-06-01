@@ -83,6 +83,42 @@ function generateAllCards() {
 // ── COUNTDOWN TIMER ─────────────────────────────────────────────────
 let countdownInterval = null;
 let countdownSeconds = ROUND_MINUTES * 60;
+let autoDrawInterval = null;
+let autoDrawRunning = false;
+const DRAW_INTERVAL_MS = 5500; // ms between balls
+
+function startAutoDraw() {
+  if (autoDrawRunning) return;
+  autoDrawRunning = true;
+  broadcastAll({ type: 'auto_started' });
+  autoDrawInterval = setInterval(() => {
+    if (!gameState.active) return;
+    const remaining = [];
+    for (let n = 1; n <= 75; n++) {
+      if (!gameState.drawnNumbers.includes(n)) remaining.push(n);
+    }
+    if (!remaining.length) {
+      stopAutoDraw();
+      return;
+    }
+    const n = remaining[Math.floor(Math.random() * remaining.length)];
+    gameState.drawnNumbers.push(n);
+    broadcastAll({ type: 'draw', n });
+    // If ALL 75 balls drawn, start countdown
+    if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
+      stopAutoDraw();
+      console.log('All 75 balls drawn — starting 10-min countdown');
+      startCountdown();
+    }
+  }, DRAW_INTERVAL_MS);
+}
+
+function stopAutoDraw() {
+  autoDrawRunning = false;
+  clearInterval(autoDrawInterval);
+  autoDrawInterval = null;
+  broadcastAll({ type: 'auto_stopped' });
+}
 
 function startCountdown(seconds = ROUND_MINUTES * 60) {
   countdownSeconds = seconds;
@@ -164,7 +200,8 @@ function startNewGame() {
   });
   sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
 
-  // Countdown starts automatically when all 75 balls are drawn (see 'draw' case)
+  // Auto-start drawing after 3 seconds
+  setTimeout(() => startAutoDraw(), 3000);
 }
 
 function getHostWs() {
@@ -211,6 +248,11 @@ wss.on('connection', (ws, req) => {
 
       case 'new_game':
         startNewGame();
+        break;
+
+      case 'toggle_auto':
+        if (autoDrawRunning) stopAutoDraw();
+        else startAutoDraw();
         break;
 
       case 'draw':
