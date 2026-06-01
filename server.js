@@ -8,8 +8,18 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 8080;
-const NUM_LOCALS = 10;
+const NUM_LOCALS = 21;
 const CARDS_PER_LOCAL = 21;
+
+// Cajero users — one per local
+const CAJERO_USERS = {};
+for(let i=1;i<=21;i++){
+  CAJERO_USERS[`local${i}`] = {
+    password: `bingo${i}`,  // default password: bingo1, bingo2, etc
+    localId: i,
+    name: `Local ${i}`
+  };
+}
 const ROUND_MINUTES = 10;
 
 // ── GAME STATE ──────────────────────────────────────────────────────
