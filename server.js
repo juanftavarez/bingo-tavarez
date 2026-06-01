@@ -175,16 +175,36 @@ server.listen(PORT, () => {
   console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
 });
 function startCountdown(seconds = ROUND_MINUTES * 60) {
+  if (countdownInterval) clearInterval(countdownInterval);
   countdownSeconds = seconds;
   gameState.countdownActive = true;
-  if (countdownInterval) clearInterval(countdownInterval);
+
+  const CAJERO_CLOSE_AT = 60; // lock cajero 60s before game starts
+  let cajeroClosed = false;
+
+  // Open cajero immediately
+  broadcastAll({ type: 'cajero_open', secondsToClose: seconds - CAJERO_CLOSE_AT });
+  broadcastAll({ type: 'countdown', seconds: countdownSeconds });
+
   countdownInterval = setInterval(() => {
     countdownSeconds--;
     broadcastAll({ type: 'countdown', seconds: countdownSeconds });
+
+    // Lock cajero at exactly 60s remaining
+    if (!cajeroClosed && countdownSeconds <= CAJERO_CLOSE_AT) {
+      cajeroClosed = true;
+      broadcastAll({ type: 'cajero_close' });
+      // Build and send sales report to all
+      const report = buildSalesReport(salesData.currentGame);
+      broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
+      console.log('🔒 Cajero locked at', countdownSeconds, 'seconds remaining');
+    }
+
     if (countdownSeconds <= 0) {
       clearInterval(countdownInterval);
       countdownInterval = null;
-      waitingForPlay = false; // auto-start from countdown is OK
+      gameState.countdownActive = false;
+      waitingForPlay = false;
       startNewGame();
       setTimeout(() => startAutoDraw(), 2000);
     }
