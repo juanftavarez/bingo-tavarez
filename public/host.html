@@ -76,10 +76,10 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
 .col-h.B{color:#ff4466;background:#ff446620}.col-h.I{color:#ffaa00;background:#ffaa0020}
 .col-h.N{color:#44ddff;background:#44ddff20}.col-h.G{color:#44ff88;background:#44ff8820}
 .col-h.O{color:#dd44ff;background:#dd44ff20}
-#ball-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;flex:1}
+#ball-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
 .ball{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;
-  font-size:10px;font-weight:700;cursor:pointer;transition:all .18s;user-select:none;
-  border:1.5px solid #2a1060;background:#0a0520;color:#554}
+  font-size:8px;font-weight:700;cursor:pointer;transition:all .18s;user-select:none;
+  border:1px solid #2a1060;background:#0a0520;color:#554}
 .ball:hover:not(.drawn){transform:scale(1.12);filter:brightness(1.4)}
 .ball.drawn{cursor:default;transform:scale(.92)}
 .ball.col-B{color:#ff4466aa;border-color:#ff446633}.ball.col-I{color:#ffaa00aa;border-color:#ffaa0033}
@@ -187,7 +187,15 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
         <span class="col-h B">B</span><span class="col-h I">I</span>
         <span class="col-h N">N</span><span class="col-h G">G</span><span class="col-h O">O</span>
       </div>
-      <div id="ball-grid"></div>
+      <div id="ball-grid-toggle" onclick="toggleBallGrid()"
+        style="cursor:pointer;display:flex;align-items:center;gap:6px;
+          padding:4px 6px;border-radius:6px;background:#0a0520;border:1px solid #2a106044;
+          margin-bottom:4px;font-size:10px;color:#888;user-select:none">
+        <span id="ball-grid-arrow">▼</span>
+        <span>75 bolos</span>
+        <span id="ball-grid-drawn-count" style="color:#ffd700;margin-left:auto">0 cantados</span>
+      </div>
+      <div id="ball-grid" style="display:none"></div>
     </div>
     <div id="drawn-list">Sin números cantados aún</div>
   </div>
@@ -231,9 +239,21 @@ const PRIZES_INFO={
 };
 
 let drawnNums=new Set(), autoInterval=null, autoRunning=false, slotRolling=false;
-let countdownTotal=900, localNames={};
+let countdownTotal=600, localNames={};
 
 // Countdown
+function toggleBallGrid(){
+  const grid=document.getElementById('ball-grid');
+  const arrow=document.getElementById('ball-grid-arrow');
+  if(grid.style.display==='none'){
+    grid.style.display='grid';
+    arrow.textContent='▲';
+  } else {
+    grid.style.display='none';
+    arrow.textContent='▼';
+  }
+}
+
 function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
 function updateCountdown(s){
   const el=document.getElementById('countdown-display');
@@ -275,7 +295,13 @@ function connect(){
       case 'locals_update':
         localNames=msg.names||{};
         buildLocals(msg.names, msg.connected, msg.disabled||[]); break;
-      case 'prize_won': addPrizeLog(msg);showWinner(msg); break;
+      case 'prize_won':
+        addPrizeLog(msg);showWinner(msg);
+        // If full card won, start 10min countdown automatically
+        if(msg.prize==='fullCard'||msg.prizeKey==='fullCard'){
+          setTimeout(()=>ws.send(JSON.stringify({type:'start_countdown'})),2000);
+        }
+        break;
       case 'countdown': updateCountdown(msg.seconds); break;
       case 'countdown_stopped': document.getElementById('countdown-display').textContent='--:--'; break;
       case 'reset_confirmed':
@@ -374,6 +400,8 @@ function drawNumber(n){
 }
 
 function updateDrawnList(){
+  const countEl=document.getElementById('ball-grid-drawn-count');
+  if(countEl) countEl.textContent=drawnNums.size+' cantados';
   const dl=document.getElementById('drawn-list');
   if(!drawnNums.size){dl.innerHTML='Sin números cantados aún';return;}
   dl.innerHTML=[...drawnNums].sort((a,b)=>a-b).map(n=>`<span>${getCol(n)}${n}</span>`).join(' · ');
