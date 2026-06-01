@@ -2,182 +2,317 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin — Bingo Tavarez</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Cajero — Bingo Tavarez</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#060310;color:#fff;font-family:'Cinzel',serif;padding:16px;min-height:100vh}
-h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:18px;text-align:center;margin-bottom:20px;letter-spacing:2px}
-.tabs{display:flex;gap:6px;margin-bottom:16px}
-.tab{padding:8px 16px;border:1px solid #d4a93a44;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;color:#888;background:#0a0220}
-.tab.active{background:#d4a93a;color:#000;font-weight:700}
-.panel{display:none}.panel.active{display:block}
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
-.summary-card{background:#0a0220;border:1px solid #d4a93a33;border-radius:10px;padding:14px;text-align:center}
-.summary-card .val{font-family:'Cinzel Decorative',serif;font-size:22px;color:#ffd700;font-weight:900}
-.summary-card .lbl{font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
-.summary-card.green .val{color:#44ff88}
-.summary-card.red .val{color:#ff4466}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{background:#1a0840;color:#d4a93a;padding:8px 10px;text-align:left;letter-spacing:1px;font-size:10px}
-td{padding:8px 10px;border-bottom:1px solid #ffffff08}
-tr:hover td{background:#0a0220}
-.badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700}
-.badge-green{background:#003300;color:#44ff88}
-.badge-red{background:#330000;color:#ff4466}
-.badge-gold{background:#332200;color:#ffd700}
-.btn{padding:8px 16px;border:1px solid #d4a93a55;border-radius:8px;cursor:pointer;
-  font-family:'Cinzel',serif;font-size:11px;color:#d4a93a;background:#0a0220;margin-right:6px}
-.btn:hover{background:#d4a93a;color:#000}
-select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;
-  color:#fff;font-family:'Cinzel',serif;font-size:11px;outline:none;margin-right:8px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
+#login-box h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;text-align:center;margin-bottom:4px}
+#login-box p{font-size:10px;color:#555;text-align:center;margin-bottom:20px;letter-spacing:1px}
+.field{margin-bottom:10px}
+.field label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px}
+.field input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
+.field input:focus{border-color:#d4a93a}
+.btn-gold{width:100%;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
+#login-error{color:#ff4466;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+
+/* MAIN PANEL */
+#main{display:none;min-height:100vh;flex-direction:column}
+#header{background:linear-gradient(90deg,#0a0220,#1a0640);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4a93a22;position:sticky;top:0;z-index:10}
+#header h2{font-family:'Cinzel Decorative',serif;font-size:13px;color:#d4a93a}
+#logout-btn{background:none;border:1px solid #d4a93a33;border-radius:6px;color:#888;font-size:10px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif}
+
+#stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #d4a93a22}
+.stat{padding:10px;text-align:center;border-right:1px solid #d4a93a11}
+.stat:last-child{border-right:none}
+.stat .sv{font-size:20px;color:#ffd700;font-weight:900}
+.stat .sl{font-size:8px;color:#555;letter-spacing:1px;text-transform:uppercase}
+
+/* SELL FORM */
+#sell-form{padding:14px;background:#0a0220;border-bottom:1px solid #d4a93a22}
+#sell-form p{font-size:10px;color:#888;margin-bottom:8px;letter-spacing:1px}
+#sell-row{display:flex;gap:6px}
+#sell-num{width:70px;padding:10px;background:#05020f;border:1.5px solid #d4a93a55;border-radius:10px;color:#ffd700;font-family:'Cinzel Decorative',serif;font-size:16px;text-align:center;outline:none;font-weight:900}
+#sell-name{flex:1;padding:10px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:12px;outline:none}
+#sell-name:focus,#sell-num:focus{border-color:#d4a93a}
+#sell-btn{padding:10px 16px;background:linear-gradient(135deg,#003300,#006600);color:#44ff88;border:1px solid #44ff8844;border-radius:10px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+#sell-btn:active{background:#44ff88;color:#000}
+#sell-msg{font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+
+/* CARD LIST */
+#cards-section{padding:10px 14px;flex:1}
+#cards-section h3{font-size:10px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+#cards-list{display:flex;flex-direction:column;gap:4px}
+.card-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0a0220;border:1px solid #d4a93a11;border-radius:8px;transition:all .2s}
+.card-row.sold{background:#001a00;border-color:#44ff8833}
+.card-num{width:28px;height:28px;border-radius:50%;background:#1a0840;color:#d4a93a;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-row.sold .card-num{background:#003300;color:#44ff88}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:11px;color:#fff;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-row.sold .card-name{color:#44ff88}
+.card-status{font-size:9px;color:#555;margin-top:1px}
+.card-row.sold .card-status{color:#44ff8888}
+.unsell-btn{background:none;border:1px solid #ff444433;border-radius:6px;color:#ff6644;font-size:9px;padding:3px 8px;cursor:pointer;font-family:'Cinzel',serif;flex-shrink:0}
+.unsell-btn:active{background:#ff4444;color:#fff}
 </style>
 </head>
 <body>
-<h1>✦ BINGO TAVAREZ — ADMIN ✦</h1>
 
-<div class="tabs">
-  <div class="tab active" onclick="showTab('current')">Partida Actual</div>
-  <div class="tab" onclick="showTab('history')">Historial</div>
+<div id="login-screen">
+  <div id="login-box">
+    <h1>✦ BINGO TAVAREZ ✦</h1>
+    <p>PANEL DEL CAJERO</p>
+    <div class="field"><label>USUARIO</label><input type="text" id="lu" placeholder="local1" autocomplete="off" autocapitalize="off"></div>
+    <div class="field"><label>CONTRASEÑA</label><input type="password" id="lp" placeholder="••••••"></div>
+    <button class="btn-gold" onclick="doLogin()">ENTRAR</button>
+    <div id="login-error"></div>
+  </div>
 </div>
 
-<div id="panel-current" class="panel active">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-    <button class="btn" onclick="loadReport()">↻ Actualizar</button>
-    <span id="report-time" style="font-size:10px;color:#555"></span>
+<div id="main">
+  <div id="header">
+    <h2 id="local-title">Local</h2>
+    <button id="logout-btn" onclick="logout()">Salir</button>
   </div>
 
-  <div class="summary-grid" id="summary-grid">
-    <div class="summary-card"><div class="val" id="s-cards">-</div><div class="lbl">Cartones Vendidos</div></div>
-    <div class="summary-card green"><div class="val" id="s-revenue">-</div><div class="lbl">Ingresos</div></div>
-    <div class="summary-card red"><div class="val" id="s-prizes">-</div><div class="lbl">Premios Pagados</div></div>
-    <div class="summary-card"><div class="val" id="s-net">-</div><div class="lbl">Ganancia Neta</div></div>
+  <div id="stats">
+    <div class="stat"><div class="sv" id="st-sold">0</div><div class="sl">Vendidos</div></div>
+    <div class="stat"><div class="sv" id="st-avail">0</div><div class="sl">Disponibles</div></div>
+    <div class="stat"><div class="sv" id="st-income">$0</div><div class="sl">Ingresos</div></div>
   </div>
 
-  <table>
-    <thead>
-      <tr><th>Local</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
-    </thead>
-    <tbody id="locals-table"></tbody>
-  </table>
-</div>
-
-<div id="panel-history" class="panel">
-  <div style="margin-bottom:16px">
-    <button class="btn" onclick="loadHistory()">↻ Cargar Historial</button>
+  <!-- Lock banner -->
+  <div id="lock-banner" style="display:none;background:#330000;border-bottom:1px solid #ff444433;
+    padding:10px 14px;align-items:center;justify-content:center;gap:8px">
+    <span style="font-size:20px">🔒</span>
+    <div style="text-align:center">
+      <div style="font-size:12px;color:#ff6644;font-weight:700;font-family:'Cinzel Decorative',serif">PANEL BLOQUEADO</div>
+      <div style="font-size:10px;color:#ff9944">Esperando nueva partida...</div>
+    </div>
   </div>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Fecha</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
-    </thead>
-    <tbody id="history-table"></tbody>
-  </table>
+
+  <div id="sell-form">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <p style="margin:0">VENDER CARTÓN</p>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:9px;color:#888">Cierra en:</span>
+        <span id="cajero-timer" style="font-size:13px;font-weight:900;color:#44ff88;font-family:'Cinzel Decorative',serif">9:00</span>
+      </div>
+    </div>
+    <div id="sell-row">
+      <input type="number" id="sell-num" placeholder="Nº" min="1" max="21">
+      <input type="text" id="sell-name" placeholder="Nombre del jugador..." maxlength="30">
+      <button id="sell-btn" onclick="sellCard()">✅ VENDER</button>
+    </div>
+    <div id="sell-msg"></div>
+  </div>
+
+  <div id="cards-section">
+    <h3>Cartones (<span id="sold-count">0</span>/21)</h3>
+    <div id="cards-list"></div>
+  </div>
 </div>
 
 <script>
-function showTab(id){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['current','history'][i]===id));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  if(id==='history') loadHistory();
-  else loadReport();
+let token = localStorage.getItem('cajero_token');
+let localId = 0;
+let soldCards = {};
+let cajeroLocked = false;
+let cajeroTimer = null;
+let cajeroSecsLeft = 0;
+let ws = null;
+
+if(token){ showMain(); loadSales(); connectWS(); }
+
+function connectWS(){
+  if(!token) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen = () => console.log('WS connected');
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if(msg.type === 'cajero_open'){
+      unlockCajero(msg.secondsToClose);
+    } else if(msg.type === 'cajero_close'){
+      lockCajero();
+    } else if(msg.type === 'card_sold_confirm'){
+      // another session sold a card
+    } else if(msg.type === 'sales_report_auto'){
+      showSalesReport(msg.report);
+    }
+  };
+  ws.onclose = () => setTimeout(connectWS, 3000);
 }
 
-async function loadReport(){
-  try{
-    const r=await fetch('/api/sales/current');
-    const d=await r.json();
-    renderReport(d.report, d.game);
-    document.getElementById('report-time').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
-  }catch(e){alert('Error: '+e.message);}
+function unlockCajero(secsToClose){
+  cajeroLocked = false;
+  cajeroSecsLeft = secsToClose || 540;
+  updateLockUI();
+  clearInterval(cajeroTimer);
+  cajeroTimer = setInterval(()=>{
+    cajeroSecsLeft--;
+    updateTimerUI();
+    if(cajeroSecsLeft <= 0){ clearInterval(cajeroTimer); lockCajero(); }
+  }, 1000);
 }
 
-function renderReport(report, game){
-  document.getElementById('s-cards').textContent=report.totals.cards;
-  document.getElementById('s-revenue').textContent='$'+report.totals.revenue.toLocaleString();
-  document.getElementById('s-prizes').textContent='$'+report.totals.prizes.toLocaleString();
-  const net=report.totals.net;
-  const netEl=document.getElementById('s-net');
-  netEl.textContent='$'+net.toLocaleString();
-  netEl.style.color=net>=0?'#44ff88':'#ff4466';
+function lockCajero(){
+  cajeroLocked = true;
+  clearInterval(cajeroTimer);
+  updateLockUI();
+}
 
-  const tbody=document.getElementById('locals-table');
-  tbody.innerHTML='';
-  Object.entries(report.locals).forEach(([key,local])=>{
-    if(!local.cardsSold&&!local.prizes.length) return;
-    const net2=local.revenue-local.prizes;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><b>${local.name}</b></td>
-      <td>${local.cardsSold}</td>
-      <td style="color:#44ff88">$${local.revenue.toLocaleString()}</td>
-      <td style="color:#ff4466">$${local.prizes.toLocaleString()}</td>
-      <td><span class="badge ${net2>=0?'badge-green':'badge-red'}">$${net2.toLocaleString()}</span></td>`;
-    tr.style.cursor='pointer';
-    tr.onclick=()=>showLocalDetail(key,local);
-    tbody.appendChild(tr);
-  });
-  if(!tbody.children.length){
-    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#555;padding:16px">Sin ventas aún</td></tr>';
+function updateLockUI(){
+  const form = document.getElementById('sell-form');
+  const lockBanner = document.getElementById('lock-banner');
+  if(cajeroLocked){
+    form.style.opacity = '0.4';
+    form.style.pointerEvents = 'none';
+    if(lockBanner) lockBanner.style.display = 'flex';
+  } else {
+    form.style.opacity = '1';
+    form.style.pointerEvents = 'auto';
+    if(lockBanner) lockBanner.style.display = 'none';
   }
 }
 
-function showLocalDetail(key, local){
-  const name=local.name;
-  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" onclick="this.remove()">
-  <div style="background:#0d0528;border:1px solid #d4a93a44;border-radius:14px;padding:16px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
-  <div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">📍 ${name}</div>`;
-  
-  html+='<div style="font-size:11px;color:#d4a93a;margin-bottom:6px;letter-spacing:1px">CARTONES VENDIDOS</div>';
-  if(local.salesDetail.length){
-    local.salesDetail.forEach(s=>{
-      const t=new Date(s.soldAt).toLocaleTimeString('es');
-      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
-        <span>${s.playerName}</span><span style="color:#44ff88">$${s.price} · ${t}</span></div>`;
-    });
-  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin ventas</div>';
-  
-  html+='<div style="font-size:11px;color:#d4a93a;margin-top:12px;margin-bottom:6px;letter-spacing:1px">PREMIOS PAGADOS</div>';
-  if(local.prizesDetail.length){
-    local.prizesDetail.forEach(p=>{
-      const t=new Date(p.wonAt).toLocaleTimeString('es');
-      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
-        <span>${p.prize} — ${p.playerName}</span><span style="color:#ff4466">-$${p.amount} · ${t}</span></div>`;
-    });
-  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin premios</div>';
-  
-  html+='<button onclick="this.closest('[style]').remove()" style="margin-top:14px;width:100%;padding:8px;background:#d4a93a;color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-weight:700">Cerrar</button>';
-  html+='</div></div>';
-  document.body.insertAdjacentHTML('beforeend',html);
+function updateTimerUI(){
+  const el = document.getElementById('cajero-timer');
+  if(!el) return;
+  const m = Math.floor(cajeroSecsLeft/60);
+  const s = cajeroSecsLeft % 60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.style.color = cajeroSecsLeft <= 60 ? '#ff4466' : cajeroSecsLeft <= 120 ? '#ffaa00' : '#44ff88';
 }
 
-async function loadHistory(){
+function showSalesReport(report){
+  const el = document.getElementById('sell-msg');
+  if(!el) return;
+  const myKey = `local_${localId}`;
+  const local = report.locals[myKey];
+  if(local){
+    el.style.color = '#ffd700';
+    el.textContent = `✅ Partida cerrada: ${local.cardsSold} cartones · $${local.revenue} pesos`;
+    setTimeout(()=>el.textContent='', 8000);
+  }
+}
+
+async function doLogin(){
+  const user = document.getElementById('lu').value.trim().toLowerCase();
+  const pass = document.getElementById('lp').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
   try{
-    const r=await fetch('/api/sales/history');
-    const d=await r.json();
-    const tbody=document.getElementById('history-table');
-    tbody.innerHTML='';
-    const allGames=[d.currentGame,...d.history];
-    allGames.forEach((g,i)=>{
-      const rpt=g.report;
-      const date=g.startedAt?new Date(g.startedAt).toLocaleString('es'):'En curso';
-      const net=rpt.totals.net;
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${i===0?'<span class="badge badge-gold">ACTUAL</span>':('#'+(d.history.length-i+1))}</td>
-        <td style="font-size:10px">${date}</td>
-        <td>${rpt.totals.cards}</td>
-        <td style="color:#44ff88">$${rpt.totals.revenue.toLocaleString()}</td>
-        <td style="color:#ff4466">$${rpt.totals.prizes.toLocaleString()}</td>
-        <td><span class="badge ${net>=0?'badge-green':'badge-red'}">$${net.toLocaleString()}</span></td>`;
-      tbody.appendChild(tr);
-    });
-    if(!tbody.children.length) tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#555;padding:16px">Sin historial</td></tr>';
-  }catch(e){alert('Error: '+e.message);}
+    const r = await fetch('/api/cajero/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
+    const d = await r.json();
+    if(!r.ok){errEl.textContent = d.error; return;}
+    token = d.token; localId = d.localId;
+    localStorage.setItem('cajero_token', token);
+    document.getElementById('local-title').textContent = '✦ ' + d.name;
+    showMain();
+    loadSales();
+    connectWS();
+  }catch(e){errEl.textContent = 'Error de conexión';}
 }
 
-// Auto-refresh every 30s
-loadReport();
-setInterval(loadReport, 30000);
+function showMain(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main').style.display = 'flex';
+}
+
+function logout(){
+  localStorage.removeItem('cajero_token');
+  token = null; soldCards = {};
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main').style.display = 'none';
+}
+
+async function loadSales(){
+  try{
+    const r = await fetch('/api/cajero/cards',{headers:{Authorization:'Bearer '+token}});
+    if(r.status===401){logout();return;}
+    const d = await r.json();
+    localId = d.localId;
+    document.getElementById('local-title').textContent = '✦ ' + (d.localName||`Local ${localId}`);
+    soldCards = {};
+    d.cards.forEach(c=>{ if(c.sold) soldCards[c.idx] = c.playerName; });
+    renderList();
+  }catch(e){console.error(e);}
+}
+
+async function sellCard(){
+  const numEl = document.getElementById('sell-num');
+  const nameEl = document.getElementById('sell-name');
+  const msgEl = document.getElementById('sell-msg');
+  const num = parseInt(numEl.value);
+  const name = nameEl.value.trim();
+  msgEl.textContent = '';
+
+  if(!num || num < 1 || num > 21){msgEl.style.color='#ff6644';msgEl.textContent='Número de cartón inválido (1-21)';return;}
+  if(!name){msgEl.style.color='#ff6644';msgEl.textContent='Escribe el nombre del jugador';return;}
+
+  const idx = num - 1;
+  if(soldCards[idx] !== undefined){msgEl.style.color='#ff6644';msgEl.textContent=`Cartón ${num} ya fue vendido a ${soldCards[idx]}`;return;}
+
+  try{
+    const r = await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,playerName:name,action:'sell'})});
+    if(!r.ok){msgEl.style.color='#ff6644';msgEl.textContent='Error al vender';return;}
+    soldCards[idx] = name;
+    renderList();
+    msgEl.style.color='#44ff88';
+    msgEl.textContent=`✅ Cartón ${num} vendido a ${name}`;
+    numEl.value=''; nameEl.value='';
+    numEl.focus();
+    setTimeout(()=>msgEl.textContent='',3000);
+  }catch(e){msgEl.style.color='#ff6644';msgEl.textContent='Error de conexión';}
+}
+
+async function unsellCard(idx){
+  if(!confirm(`¿Cancelar venta del Cartón ${idx+1}?`)) return;
+  try{
+    await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,action:'unsell'})});
+    delete soldCards[idx];
+    renderList();
+  }catch(e){console.error(e);}
+}
+
+function renderList(){
+  const list = document.getElementById('cards-list');
+  const soldCount = Object.keys(soldCards).length;
+  document.getElementById('st-sold').textContent = soldCount;
+  document.getElementById('st-avail').textContent = 21 - soldCount;
+  document.getElementById('st-income').textContent = '$'+(soldCount*50).toLocaleString();
+  document.getElementById('sold-count').textContent = soldCount;
+
+  list.innerHTML = '';
+  for(let i=0; i<21; i++){
+    const sold = soldCards[i] !== undefined;
+    const div = document.createElement('div');
+    div.className = 'card-row' + (sold?' sold':'');
+    div.innerHTML = `<div class="card-num">${i+1}</div>
+      <div class="card-info">
+        <div class="card-name">${sold ? soldCards[i] : `Cartón ${i+1}`}</div>
+        <div class="card-status">${sold ? '✅ Vendido' : 'Disponible'}</div>
+      </div>
+      ${sold ? `<button class="unsell-btn" onclick="unsellCard(${i})">✕</button>` : ''}`;
+    list.appendChild(div);
+  }
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('login-screen').style.display!=='none') doLogin();
+    else sellCard();
+  }
+});
+
+// Auto refresh every 60s
+setInterval(loadSales, 60000);
 </script>
 </body>
 </html>
