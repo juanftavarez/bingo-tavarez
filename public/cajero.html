@@ -11,248 +11,214 @@ body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
 
 /* LOGIN */
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:340px}
-#login-box h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:16px;text-align:center;margin-bottom:6px}
+#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
+#login-box h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;text-align:center;margin-bottom:4px}
 #login-box p{font-size:10px;color:#555;text-align:center;margin-bottom:20px;letter-spacing:1px}
-.field{margin-bottom:12px}
+.field{margin-bottom:10px}
 .field label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px}
-.field input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;
-  border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
+.field input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
 .field input:focus{border-color:#d4a93a}
-.btn-primary{width:100%;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);
-  color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;
-  font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.btn-gold{width:100%;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
 #login-error{color:#ff4466;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
 
-/* CAJERO PANEL */
-#cajero-panel{display:none;min-height:100vh}
-#cajero-header{background:linear-gradient(90deg,#0a0220,#1a0640);padding:10px 14px;
-  display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4a93a22;
-  position:sticky;top:0;z-index:10}
-#cajero-header h2{font-family:'Cinzel Decorative',serif;font-size:13px;color:#d4a93a}
-#cajero-header .info{font-size:10px;color:#888}
-#logout-btn{background:none;border:1px solid #d4a93a44;border-radius:6px;color:#888;
-  font-size:10px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif}
+/* MAIN PANEL */
+#main{display:none;min-height:100vh;flex-direction:column}
+#header{background:linear-gradient(90deg,#0a0220,#1a0640);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4a93a22;position:sticky;top:0;z-index:10}
+#header h2{font-family:'Cinzel Decorative',serif;font-size:13px;color:#d4a93a}
+#logout-btn{background:none;border:1px solid #d4a93a33;border-radius:6px;color:#888;font-size:10px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif}
 
-#stats-bar{display:flex;gap:10px;padding:10px 14px;background:#05020f;border-bottom:1px solid #ffffff08}
-.stat{text-align:center;flex:1}
-.stat .sv{font-size:16px;color:#ffd700;font-weight:900}
+#stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #d4a93a22}
+.stat{padding:10px;text-align:center;border-right:1px solid #d4a93a11}
+.stat:last-child{border-right:none}
+.stat .sv{font-size:20px;color:#ffd700;font-weight:900}
 .stat .sl{font-size:8px;color:#555;letter-spacing:1px;text-transform:uppercase}
 
-#cards-container{padding:10px}
-#cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* SELL FORM */
+#sell-form{padding:14px;background:#0a0220;border-bottom:1px solid #d4a93a22}
+#sell-form p{font-size:10px;color:#888;margin-bottom:8px;letter-spacing:1px}
+#sell-row{display:flex;gap:6px}
+#sell-num{width:70px;padding:10px;background:#05020f;border:1.5px solid #d4a93a55;border-radius:10px;color:#ffd700;font-family:'Cinzel Decorative',serif;font-size:16px;text-align:center;outline:none;font-weight:900}
+#sell-name{flex:1;padding:10px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:12px;outline:none}
+#sell-name:focus,#sell-num:focus{border-color:#d4a93a}
+#sell-btn{padding:10px 16px;background:linear-gradient(135deg,#003300,#006600);color:#44ff88;border:1px solid #44ff8844;border-radius:10px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+#sell-btn:active{background:#44ff88;color:#000}
+#sell-msg{font-size:11px;text-align:center;margin-top:8px;min-height:16px}
 
-.cajero-card{background:#f0f4ff;border-radius:10px;padding:8px;border:2px solid #c0cce8;
-  transition:all .2s;position:relative}
-.cajero-card.sold{background:linear-gradient(135deg,#e8fff0,#d0fde0);border-color:#44ff88}
-.cajero-card.sold .card-number{background:#44ff88;color:#003300}
-
-.card-number{position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;
-  background:#1a0840;color:#d4a93a;font-size:8px;font-weight:900;
-  display:flex;align-items:center;justify-content:center}
-
-.card-mini-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;margin:20px 0 6px}
-.cmc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  border-radius:2px;font-size:6px;font-weight:700;background:#e0e8ff;color:#334}
-.cmc.free{background:#3377ff;color:#fff;font-size:5px}
-
-.card-name-input{width:100%;padding:5px 8px;border:1px solid #c0cce8;border-radius:6px;
-  font-family:'Cinzel',serif;font-size:10px;background:#fff;color:#334;outline:none;margin-bottom:5px}
-.card-name-input:focus{border-color:#44aa88}
-
-.sell-btn{width:100%;padding:6px;border:none;border-radius:7px;font-family:'Cinzel',serif;
-  font-size:9px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s}
-.sell-btn.unsold{background:#1a0840;color:#d4a93a;border:1px solid #d4a93a44}
-.sell-btn.unsold:active{background:#d4a93a;color:#000}
-.sell-btn.sold-state{background:#003300;color:#44ff88;border:1px solid #44ff8844}
-
-/* Sold player name */
-.sold-name{font-size:9px;color:#007700;text-align:center;font-weight:700;
-  margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* CARD LIST */
+#cards-section{padding:10px 14px;flex:1}
+#cards-section h3{font-size:10px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+#cards-list{display:flex;flex-direction:column;gap:4px}
+.card-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0a0220;border:1px solid #d4a93a11;border-radius:8px;transition:all .2s}
+.card-row.sold{background:#001a00;border-color:#44ff8833}
+.card-num{width:28px;height:28px;border-radius:50%;background:#1a0840;color:#d4a93a;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-row.sold .card-num{background:#003300;color:#44ff88}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:11px;color:#fff;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-row.sold .card-name{color:#44ff88}
+.card-status{font-size:9px;color:#555;margin-top:1px}
+.card-row.sold .card-status{color:#44ff8888}
+.unsell-btn{background:none;border:1px solid #ff444433;border-radius:6px;color:#ff6644;font-size:9px;padding:3px 8px;cursor:pointer;font-family:'Cinzel',serif;flex-shrink:0}
+.unsell-btn:active{background:#ff4444;color:#fff}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div id="login-box">
     <h1>✦ BINGO TAVAREZ ✦</h1>
     <p>PANEL DEL CAJERO</p>
-    <div class="field">
-      <label>USUARIO</label>
-      <input type="text" id="login-user" placeholder="local1" autocomplete="off" autocapitalize="off">
-    </div>
-    <div class="field">
-      <label>CONTRASEÑA</label>
-      <input type="password" id="login-pass" placeholder="••••••">
-    </div>
-    <button class="btn-primary" onclick="doLogin()">ENTRAR</button>
+    <div class="field"><label>USUARIO</label><input type="text" id="lu" placeholder="local1" autocomplete="off" autocapitalize="off"></div>
+    <div class="field"><label>CONTRASEÑA</label><input type="password" id="lp" placeholder="••••••"></div>
+    <button class="btn-gold" onclick="doLogin()">ENTRAR</button>
     <div id="login-error"></div>
   </div>
 </div>
 
-<!-- CAJERO PANEL -->
-<div id="cajero-panel">
-  <div id="cajero-header">
-    <div>
-      <h2 id="local-title">Local</h2>
-      <div class="info" id="game-status">Cargando...</div>
-    </div>
+<div id="main">
+  <div id="header">
+    <h2 id="local-title">Local</h2>
     <button id="logout-btn" onclick="logout()">Salir</button>
   </div>
 
-  <div id="stats-bar">
+  <div id="stats">
     <div class="stat"><div class="sv" id="st-sold">0</div><div class="sl">Vendidos</div></div>
-    <div class="stat"><div class="sv" id="st-available">0</div><div class="sl">Disponibles</div></div>
+    <div class="stat"><div class="sv" id="st-avail">0</div><div class="sl">Disponibles</div></div>
     <div class="stat"><div class="sv" id="st-income">$0</div><div class="sl">Ingresos</div></div>
   </div>
 
-  <div id="cards-container">
-    <div id="cards-grid"></div>
+  <div id="sell-form">
+    <p>VENDER CARTÓN</p>
+    <div id="sell-row">
+      <input type="number" id="sell-num" placeholder="Nº" min="1" max="21">
+      <input type="text" id="sell-name" placeholder="Nombre del jugador..." maxlength="30">
+      <button id="sell-btn" onclick="sellCard()">✅ VENDER</button>
+    </div>
+    <div id="sell-msg"></div>
+  </div>
+
+  <div id="cards-section">
+    <h3>Cartones (<span id="sold-count">0</span>/21)</h3>
+    <div id="cards-list"></div>
   </div>
 </div>
 
 <script>
 let token = localStorage.getItem('cajero_token');
-let localId = parseInt(localStorage.getItem('cajero_localId') || '0');
-let cards = [];
+let localId = 0;
+let soldCards = {}; // cardIdx → playerName
 
-// Auto-login if token exists
-if(token) loadCards();
+if(token){ showMain(); loadSales(); }
 
 async function doLogin(){
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
+  const user = document.getElementById('lu').value.trim().toLowerCase();
+  const pass = document.getElementById('lp').value;
   const errEl = document.getElementById('login-error');
   errEl.textContent = '';
   try{
-    const r = await fetch('/api/cajero/login', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username: user, password: pass})
-    });
+    const r = await fetch('/api/cajero/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
     const d = await r.json();
     if(!r.ok){errEl.textContent = d.error; return;}
-    token = d.token;
-    localId = d.localId;
+    token = d.token; localId = d.localId;
     localStorage.setItem('cajero_token', token);
-    localStorage.setItem('cajero_localId', localId);
     document.getElementById('local-title').textContent = '✦ ' + d.name;
-    showPanel();
-    loadCards();
+    showMain();
+    loadSales();
   }catch(e){errEl.textContent = 'Error de conexión';}
 }
 
-function showPanel(){
+function showMain(){
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('cajero-panel').style.display = 'block';
+  document.getElementById('main').style.display = 'flex';
 }
 
 function logout(){
   localStorage.removeItem('cajero_token');
-  localStorage.removeItem('cajero_localId');
-  token = null;
+  token = null; soldCards = {};
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('cajero-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
 }
 
-async function loadCards(){
+async function loadSales(){
   try{
-    const r = await fetch('/api/cajero/cards', {
-      headers: {Authorization: 'Bearer ' + token}
-    });
-    if(r.status === 401){logout(); return;}
+    const r = await fetch('/api/cajero/cards',{headers:{Authorization:'Bearer '+token}});
+    if(r.status===401){logout();return;}
     const d = await r.json();
-    cards = d.cards;
-    document.getElementById('local-title').textContent = '✦ ' + (d.localName || `Local ${localId}`);
-    renderCards();
-    updateStats();
-    showPanel();
-  }catch(e){
-    document.getElementById('game-status').textContent = 'Error de conexión';
-  }
-}
-
-function renderCards(){
-  const grid = document.getElementById('cards-grid');
-  grid.innerHTML = '';
-  cards.forEach((card, i) => {
-    const div = document.createElement('div');
-    div.className = 'cajero-card' + (card.sold ? ' sold' : '');
-    div.id = `ccard-${i}`;
-
-    // Card number badge
-    div.innerHTML = `<div class="card-number">${i+1}</div>`;
-
-    // Mini grid
-    let gridHtml = '<div class="card-mini-grid">';
-    if(card.grid && Array.isArray(card.grid)){
-      card.grid.forEach((row, r) => {
-        row.forEach((n, c) => {
-          const isFree = r===2&&c===2;
-          gridHtml += `<div class="cmc${isFree?' free':''}">${isFree?'F':n}</div>`;
-        });
-      });
-    }
-    gridHtml += '</div>';
-    div.innerHTML += gridHtml;
-
-    // Player name or sold name
-    if(card.sold){
-      div.innerHTML += `<div class="sold-name">✅ ${card.playerName}</div>`;
-      div.innerHTML += `<button class="sell-btn sold-state" onclick="toggleSell(${i})">✅ VENDIDO</button>`;
-    } else {
-      div.innerHTML += `<input class="card-name-input" id="inp-${i}" placeholder="Nombre jugador..." value="${card.playerName||''}">`;
-      div.innerHTML += `<button class="sell-btn unsold" onclick="toggleSell(${i})">🛒 VENDER</button>`;
-    }
-
-    grid.appendChild(div);
-  });
-}
-
-async function toggleSell(idx){
-  const card = cards[idx];
-  const action = card.sold ? 'unsell' : 'sell';
-  const inp = document.getElementById(`inp-${idx}`);
-  const playerName = (inp && inp.value.trim()) ? inp.value.trim() : (card.playerName || `Cartón ${idx+1}`);
-  // If selling and no name entered, prompt for name
-  if(action === 'sell' && (!inp || !inp.value.trim())){
-    const name = prompt(`Nombre del jugador para Cartón ${idx+1}:`);
-    if(name === null) return; // cancelled
-    cards[idx].playerName = name.trim() || `Cartón ${idx+1}`;
-  }
-  const finalName = (action === 'sell') ? (cards[idx].playerName || `Cartón ${idx+1}`) : '';
-
-  try{
-    const r = await fetch('/api/cajero/sell', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + token},
-      body: JSON.stringify({cardIdx: idx, playerName: action==='sell'?finalName:playerName, action})
-    });
-    if(!r.ok) return;
-    // Update local state
-    cards[idx].sold = action === 'sell';
-    cards[idx].playerName = action === 'sell' ? playerName : '';
-    renderCards();
-    updateStats();
+    localId = d.localId;
+    document.getElementById('local-title').textContent = '✦ ' + (d.localName||`Local ${localId}`);
+    soldCards = {};
+    d.cards.forEach(c=>{ if(c.sold) soldCards[c.idx] = c.playerName; });
+    renderList();
   }catch(e){console.error(e);}
 }
 
-function updateStats(){
-  const sold = cards.filter(c => c.sold).length;
-  const available = cards.length - sold;
-  document.getElementById('st-sold').textContent = sold;
-  document.getElementById('st-available').textContent = available;
-  document.getElementById('st-income').textContent = '$' + (sold * 50).toLocaleString();
+async function sellCard(){
+  const numEl = document.getElementById('sell-num');
+  const nameEl = document.getElementById('sell-name');
+  const msgEl = document.getElementById('sell-msg');
+  const num = parseInt(numEl.value);
+  const name = nameEl.value.trim();
+  msgEl.textContent = '';
+
+  if(!num || num < 1 || num > 21){msgEl.style.color='#ff6644';msgEl.textContent='Número de cartón inválido (1-21)';return;}
+  if(!name){msgEl.style.color='#ff6644';msgEl.textContent='Escribe el nombre del jugador';return;}
+
+  const idx = num - 1;
+  if(soldCards[idx] !== undefined){msgEl.style.color='#ff6644';msgEl.textContent=`Cartón ${num} ya fue vendido a ${soldCards[idx]}`;return;}
+
+  try{
+    const r = await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,playerName:name,action:'sell'})});
+    if(!r.ok){msgEl.style.color='#ff6644';msgEl.textContent='Error al vender';return;}
+    soldCards[idx] = name;
+    renderList();
+    msgEl.style.color='#44ff88';
+    msgEl.textContent=`✅ Cartón ${num} vendido a ${name}`;
+    numEl.value=''; nameEl.value='';
+    numEl.focus();
+    setTimeout(()=>msgEl.textContent='',3000);
+  }catch(e){msgEl.style.color='#ff6644';msgEl.textContent='Error de conexión';}
 }
 
-// Auto refresh every 30s
-setInterval(loadCards, 30000);
+async function unsellCard(idx){
+  if(!confirm(`¿Cancelar venta del Cartón ${idx+1}?`)) return;
+  try{
+    await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,action:'unsell'})});
+    delete soldCards[idx];
+    renderList();
+  }catch(e){console.error(e);}
+}
 
-// Enter key on password field
-document.addEventListener('keydown', e => {
-  if(e.key === 'Enter') doLogin();
+function renderList(){
+  const list = document.getElementById('cards-list');
+  const soldCount = Object.keys(soldCards).length;
+  document.getElementById('st-sold').textContent = soldCount;
+  document.getElementById('st-avail').textContent = 21 - soldCount;
+  document.getElementById('st-income').textContent = '$'+(soldCount*50).toLocaleString();
+  document.getElementById('sold-count').textContent = soldCount;
+
+  list.innerHTML = '';
+  for(let i=0; i<21; i++){
+    const sold = soldCards[i] !== undefined;
+    const div = document.createElement('div');
+    div.className = 'card-row' + (sold?' sold':'');
+    div.innerHTML = `<div class="card-num">${i+1}</div>
+      <div class="card-info">
+        <div class="card-name">${sold ? soldCards[i] : `Cartón ${i+1}`}</div>
+        <div class="card-status">${sold ? '✅ Vendido' : 'Disponible'}</div>
+      </div>
+      ${sold ? `<button class="unsell-btn" onclick="unsellCard(${i})">✕</button>` : ''}`;
+    list.appendChild(div);
+  }
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('login-screen').style.display!=='none') doLogin();
+    else sellCard();
+  }
 });
+
+// Auto refresh every 60s
+setInterval(loadSales, 60000);
 </script>
 </body>
 </html>
