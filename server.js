@@ -261,7 +261,8 @@ wss.on('connection', (ws, req) => {
         sendTo(ws, {
           type: 'state', state: gameState,
           countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive
+          countdownActive: gameState.countdownActive,
+          sales: salesData ? salesData.currentGame.sales : {}
         });
         broadcastLocalsUpdate();
         break;
