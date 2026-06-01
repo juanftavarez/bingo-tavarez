@@ -170,7 +170,7 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
     <div id="controls">
       <button class="ctrl-btn" id="btn-new" onclick="newGame()">🎮 NUEVA PARTIDA</button>
       <button class="ctrl-btn" id="btn-reset" onclick="resetGame()">🔄 RESET</button>
-      <button class="ctrl-btn" id="btn-auto" onclick="toggleAuto()">▶ AUTO</button>
+
     </div>
 
     <div id="tombola-wrap">
@@ -289,7 +289,10 @@ function connect(){
         drawnNums=new Set();
         document.querySelectorAll('.ball').forEach(b=>b.classList.remove('drawn'));
         document.getElementById('prize-log-list').innerHTML='<div style="font-size:11px;color:#555;text-align:center;padding:8px">Sin premios aún</div>';
-        updateDrawnList();resetSlot(); break;
+        updateDrawnList();resetSlot();
+        // Auto starts — server handles draw automatically
+        autoRunning=true;
+        break;
       case 'draw':
         if(!drawnNums.has(msg.n)){drawnNums.add(msg.n);const b=document.getElementById(`ball-${msg.n}`);if(b)b.classList.add('drawn');updateDrawnList();}
         break;
