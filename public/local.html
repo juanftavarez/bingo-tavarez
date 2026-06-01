@@ -282,6 +282,8 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
       <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
       <div id="prize-panel">
+        <div class="prize-item" id="pp-COSITA"  style="color:#ff9944;border-color:#ff994455"><span class="pi-icon">🎯</span><span class="pi-val">$50</span></div>
+        <div class="prize-item" id="pp-MEDIO"   style="color:#ff44aa;border-color:#ff44aa55"><span class="pi-icon">〰️</span><span class="pi-val">$50</span></div>
         <div class="prize-item" id="pp-L"       style="color:#44ff88;border-color:#44ff8855"><span class="pi-icon">🏅</span><span class="pi-val">L $15</span></div>
         <div class="prize-item" id="pp-T"       style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🏅</span><span class="pi-val">T $15</span></div>
         <div class="prize-item" id="pp-X"       style="color:#ff88aa;border-color:#ff88aa55"><span class="pi-icon">🏅</span><span class="pi-val">X $15</span></div>
@@ -340,12 +342,14 @@ const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
 const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
 const PRIZES_INFO={
-  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$50', amount:50},
-  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$50', amount:50},
-  X:       {icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$50', amount:50},
-  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$50', amount:50},
-  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$150',amount:150},
-  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$500',amount:500},
+  COSITA:  {icon:'🎯',color:'#ff9944',msg:'¡LA COSITA!',    prize:'$50 pesos', amount:50},
+  MEDIO:   {icon:'〰️',color:'#ff44aa',msg:'¡EL MEDIO!',     prize:'$50 pesos', amount:50},
+  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$50 pesos', amount:50},
+  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$50 pesos', amount:50},
+  X:       {icon:'✖️', color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$50 pesos', amount:50},
+  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$50 pesos', amount:50},
+  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$150 pesos',amount:150},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$500 pesos',amount:500},
 };
 const PATTERNS={
   L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
@@ -355,7 +359,7 @@ const PATTERNS={
 };
 
 let cardsData=[], drawnNums=new Set();
-let prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+let prizes={COSITA:false,MEDIO:false,L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
 const highlightedLines=new Set();
 let slotRolling=false;
 let countdownTotal=900;
@@ -597,12 +601,14 @@ let allLocalNames = {}; // updated from server
 const tickerItems = []; // prize history for ticker
 
 const PRIZES_INFO_TICKER = {
-  L:       {icon:'🏅', label:'Figura L',    prize:'$50'},
-  T:       {icon:'🏅', label:'Figura T',    prize:'$50'},
-  X:       {icon:'🏅', label:'Figura X',    prize:'$50'},
-  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$50'},
-  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$150'},
-  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$500'},
+  COSITA:  {icon:'🎯', label:'La Cosita',   prize:'$50 pesos'},
+  MEDIO:   {icon:'〰️', label:'El Medio',    prize:'$50 pesos'},
+  L:       {icon:'🏅', label:'Figura L',    prize:'$50 pesos'},
+  T:       {icon:'🏅', label:'Figura T',    prize:'$50 pesos'},
+  X:       {icon:'🏅', label:'Figura X',    prize:'$50 pesos'},
+  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$50 pesos'},
+  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$150 pesos'},
+  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$500 pesos'},
 };
 
 function addTickerItem(msg) {
@@ -771,6 +777,34 @@ function checkWin(ci){
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
       const isX2Win = isCardX2(ci);
       ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isX2Win}));return;}
+  }
+  // Check COSITA (2 horizontal adjacent in corner row)
+  if(!prizes.COSITA){
+    const cositaCorners=[[[0,0],[0,1]],[[0,3],[0,4]],[[4,0],[4,1]],[[4,3],[4,4]]];
+    for(const pair of cositaCorners){
+      if(pair.every(([r,c])=>isMarked(ci,r,c))){
+        prizes.COSITA=true;
+        pair.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+          if(el)el.style.cssText='background:radial-gradient(circle,#ff9944,#cc5500)!important;border-color:#ff9944!important;box-shadow:0 0 12px #ff994499!important;color:#000!important;font-weight:900!important;';
+        });
+        const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+        ws.send(JSON.stringify({type:'prize_won',prize:'COSITA',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
+        return;
+      }
+    }
+  }
+  // Check MEDIO (2 balls in middle row)
+  if(!prizes.MEDIO){
+    const midMarked=[0,1,3,4].filter(c=>isMarked(ci,2,c));
+    if(midMarked.length>=2){
+      prizes.MEDIO=true;
+      midMarked.slice(0,2).forEach(c=>{const el=document.getElementById(`cell-${ci}-2-${c}`);
+        if(el)el.style.cssText='background:radial-gradient(circle,#ff44aa,#880055)!important;border-color:#ff44aa!important;box-shadow:0 0 12px #ff44aa99!important;color:#fff!important;font-weight:900!important;';
+      });
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:'MEDIO',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
+      return;
+    }
   }
   for(const shape of['L','T','X','CRUZ']){
     if(!prizes[shape]&&hasPattern(ci,shape)){
