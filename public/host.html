@@ -239,6 +239,7 @@ const PRIZES_INFO={
 };
 
 let drawnNums=new Set(), autoInterval=null, autoRunning=false, slotRolling=false;
+// Note: auto draw runs on server — autoRunning tracks server state
 let countdownTotal=600, localNames={};
 
 // Countdown
@@ -303,6 +304,14 @@ function connect(){
         }
         break;
       case 'countdown': updateCountdown(msg.seconds); break;
+      case 'auto_started':{
+        const btn=document.getElementById('btn-auto');
+        if(btn){btn.textContent='⏹ PARAR';btn.classList.add('running');}
+        autoRunning=true; break;}
+      case 'auto_stopped':{
+        const btn=document.getElementById('btn-auto');
+        if(btn){btn.textContent='▶ AUTO';btn.classList.remove('running');}
+        autoRunning=false; break;}
       case 'countdown_stopped': document.getElementById('countdown-display').textContent='--:--'; break;
       case 'reset_confirmed':
         drawnNums=new Set();document.querySelectorAll('.ball').forEach(b=>b.classList.remove('drawn'));
@@ -458,14 +467,10 @@ function newGame(){if(!confirm('¿Nueva partida? Se generan nuevos cartones para
 function resetGame(){if(!confirm('¿Resetear partida?'))return;ws.send(JSON.stringify({type:'reset'}));}
 function toggleAuto(){
   const btn=document.getElementById('btn-auto');
-  if(autoRunning){clearInterval(autoInterval);autoInterval=null;autoRunning=false;btn.textContent='▶ AUTO';btn.classList.remove('running');}
-  else{
-    autoRunning=true;btn.textContent='⏹ PARAR';btn.classList.add('running');
-    autoInterval=setInterval(()=>{
-      const rem=[];for(let n=1;n<=75;n++)if(!drawnNums.has(n))rem.push(n);
-      if(!rem.length){toggleAuto();return;}
-      drawNumber(rem[Math.floor(Math.random()*rem.length)]);
-    },5500);
+  if(autoRunning){
+    ws.send(JSON.stringify({type:'stop_auto'}));
+  } else {
+    ws.send(JSON.stringify({type:'start_auto'}));
   }
 }
 
