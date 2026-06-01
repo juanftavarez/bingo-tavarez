@@ -109,6 +109,10 @@ let autoDrawInterval = null;
 let autoDrawRunning = false;
 const DRAW_INTERVAL_MS = 5500; // ms between balls
 
+// Init cards on startup
+gameState.cards = generateAllCards();
+gameState.prizes = initPrizes();
+
 function startAutoDraw() {
   if (autoDrawRunning) return;
   if (waitingForPlay) return; // waiting for host to press PLAY
