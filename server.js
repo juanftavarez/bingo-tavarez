@@ -241,6 +241,10 @@ wss.on('connection', (ws, req) => {
             x2: msg.x2 || false
           };
           broadcastAll(prizeMsg); // sends to every connected client including all locals
+          // Auto start 10-min countdown when fullCard is won
+          if (msg.prize === 'fullCard' && !gameState.countdownActive) {
+            setTimeout(() => startCountdown(), 3000); // 3s delay so winner animation shows
+          }
         }
         break;
 
