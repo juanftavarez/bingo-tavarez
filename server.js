@@ -246,6 +246,9 @@ function startNewGame() {
   });
   sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
 
+  // Open cajero for next round
+  const nextClose = ROUND_MINUTES * 60 - 60;
+  broadcastAll({ type: 'cajero_open', secondsToClose: nextClose });
   // Auto draw starts via PLAY button in host or after countdown
 }
 
