@@ -47,18 +47,20 @@ body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
 /* CARD LIST */
 #cards-section{padding:10px 14px;flex:1}
 #cards-section h3{font-size:10px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-#cards-list{display:flex;flex-direction:column;gap:4px}
-.card-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0a0220;border:1px solid #d4a93a11;border-radius:8px;transition:all .2s}
-.card-row.sold{background:#001a00;border-color:#44ff8833}
-.card-num{width:28px;height:28px;border-radius:50%;background:#1a0840;color:#d4a93a;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#cards-list{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.card-row{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;
+  background:#0a0220;border:1px solid #d4a93a11;border-radius:8px;cursor:pointer;transition:all .15s;min-width:0}
+.card-row.sold{background:#001a00;border-color:#44ff8844}
+.card-num{width:26px;height:26px;border-radius:50%;background:#1a0840;color:#d4a93a;
+  font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
 .card-row.sold .card-num{background:#003300;color:#44ff88}
-.card-info{flex:1;min-width:0}
-.card-name{font-size:11px;color:#fff;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-name{font-size:9px;color:#fff;font-weight:700;text-align:center;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;width:100%}
 .card-row.sold .card-name{color:#44ff88}
-.card-status{font-size:9px;color:#555;margin-top:1px}
+.card-status{font-size:8px;color:#555}
 .card-row.sold .card-status{color:#44ff8888}
-.unsell-btn{background:none;border:1px solid #ff444433;border-radius:6px;color:#ff6644;font-size:9px;padding:3px 8px;cursor:pointer;font-family:'Cinzel',serif;flex-shrink:0}
-.unsell-btn:active{background:#ff4444;color:#fff}
+.unsell-btn{background:none;border:1px solid #ff444433;border-radius:4px;color:#ff6644;
+  font-size:8px;padding:2px 5px;cursor:pointer;font-family:'Cinzel',serif}
 </style>
 </head>
 <body>
@@ -295,11 +297,13 @@ function renderList(){
     const div = document.createElement('div');
     div.className = 'card-row' + (sold?' sold':'');
     div.innerHTML = `<div class="card-num">${i+1}</div>
-      <div class="card-info">
-        <div class="card-name">${sold ? soldCards[i] : `Cartón ${i+1}`}</div>
-        <div class="card-status">${sold ? '✅ Vendido' : 'Disponible'}</div>
-      </div>
-      ${sold ? `<button class="unsell-btn" onclick="unsellCard(${i})">✕</button>` : ''}`;
+      <div class="card-name">${sold ? soldCards[i] : ''}</div>
+      <div class="card-status">${sold ? '✅' : '·'}</div>
+      ${sold ? `<button class="unsell-btn" onclick="unsellCard(${i});event.stopPropagation()">✕</button>` : ''}`;
+    if(!sold) div.onclick = () => {
+      document.getElementById('sell-num').value = i+1;
+      document.getElementById('sell-name').focus();
+    };
     list.appendChild(div);
   }
 }
