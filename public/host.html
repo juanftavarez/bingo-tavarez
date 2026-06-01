@@ -308,6 +308,7 @@ function connect(){
         }
         break;
       case 'countdown': updateCountdown(msg.seconds); break;
+      case 'sales_update': updateSalesLog(msg); break;
       case 'auto_started':{
         const btn=document.getElementById('btn-auto');
         if(btn){btn.textContent='⏹ PARAR';btn.classList.add('running');}
@@ -375,6 +376,20 @@ function saveName(localId,name){
 }
 
 // Prize log
+function updateSalesLog(msg){
+  const list=document.getElementById('sales-log-list');
+  if(!list) return;
+  const lname=localNames[`local_${msg.localId}`]||`Local ${msg.localId}`;
+  const now=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  const date=new Date().toLocaleDateString('es',{day:'2-digit',month:'2-digit'});
+  const empty=list.querySelector('[style*="color:#555"]');if(empty)empty.remove();
+  const entry=document.createElement('div');
+  entry.style.cssText='display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #ffffff08';
+  entry.innerHTML=`<span style="color:#fff">${lname} — Cartón ${msg.cardIdx+1} <span style="color:#aaa">${msg.playerName||''}</span></span>
+    <span style="color:#44ff88;white-space:nowrap">${date} ${now}</span>`;
+  list.prepend(entry);
+}
+
 function addPrizeLog(msg){
   const list=document.getElementById('prize-log-list');
   const empty=list.querySelector('[style]');if(empty)empty.remove();
