@@ -498,7 +498,6 @@ function getCol(n){if(n<=15)return 'B';if(n<=30)return 'I';if(n<=45)return 'N';i
 // Load cards
 function loadCards(cards){
   cardsData=cards;
-  document.getElementById('waiting').style.display='none';
   const grid=document.getElementById('cards-grid');
   grid.style.display='grid';grid.innerHTML='';
   // Columns based on screen width + card count
