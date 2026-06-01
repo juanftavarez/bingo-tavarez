@@ -214,13 +214,20 @@ async function toggleSell(idx){
   const card = cards[idx];
   const action = card.sold ? 'unsell' : 'sell';
   const inp = document.getElementById(`inp-${idx}`);
-  const playerName = inp ? inp.value.trim() || `Cartón ${idx+1}` : card.playerName;
+  const playerName = (inp && inp.value.trim()) ? inp.value.trim() : (card.playerName || `Cartón ${idx+1}`);
+  // If selling and no name entered, prompt for name
+  if(action === 'sell' && (!inp || !inp.value.trim())){
+    const name = prompt(`Nombre del jugador para Cartón ${idx+1}:`);
+    if(name === null) return; // cancelled
+    cards[idx].playerName = name.trim() || `Cartón ${idx+1}`;
+  }
+  const finalName = (action === 'sell') ? (cards[idx].playerName || `Cartón ${idx+1}`) : '';
 
   try{
     const r = await fetch('/api/cajero/sell', {
       method: 'POST',
       headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + token},
-      body: JSON.stringify({cardIdx: idx, playerName, action})
+      body: JSON.stringify({cardIdx: idx, playerName: action==='sell'?finalName:playerName, action})
     });
     if(!r.ok) return;
     // Update local state
