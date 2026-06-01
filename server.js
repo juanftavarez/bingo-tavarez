@@ -149,6 +149,31 @@ function stopAutoDraw() {
 
 let waitingForPlay = false; // true after reset, waiting for PLAY button
 
+function buildSalesReport(game) {
+  const report = { locals: {}, totals: { cards: 0, revenue: 0, prizes: 0, net: 0 } };
+  for (let i = 1; i <= NUM_LOCALS; i++) {
+    const key = `local_${i}`;
+    const sales = game.sales?.[key] || [];
+    const prizes = game.prizes?.[key] || [];
+    const revenue = sales.length * CARD_PRICE;
+    const prizesTotal = prizes.reduce((s, p) => s + (p.amount || 0), 0);
+    report.locals[key] = {
+      name: gameState.localNames[key] || `Local ${i}`,
+      cardsSold: sales.length, revenue, prizes: prizesTotal,
+      net: revenue - prizesTotal,
+      salesDetail: sales, prizesDetail: prizes
+    };
+    report.totals.cards += sales.length;
+    report.totals.revenue += revenue;
+    report.totals.prizes += prizesTotal;
+    report.totals.net += revenue - prizesTotal;
+  }
+  return report;
+}
+
+server.listen(PORT, () => {
+  console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
+});
 function startCountdown(seconds = ROUND_MINUTES * 60) {
   countdownSeconds = seconds;
   gameState.countdownActive = true;
@@ -296,7 +321,8 @@ wss.on('connection', (ws, req) => {
           localName: gameState.localNames[`local_${msg.localId}`],
           isDisabled: gameState.disabledLocals.has(msg.localId),
           countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive
+          countdownActive: gameState.countdownActive,
+          sales: salesData ? (salesData.currentGame.sales[`local_${msg.localId}`] || []) : []
         });
         broadcastLocalsUpdate();
         break;
@@ -553,30 +579,4 @@ app.get('/api/sales/history', (req, res) => {
     report: buildSalesReport(g)
   }));
   res.json({ history, currentGame: { gameId: salesData.currentGame.gameId, startedAt: salesData.currentGame.startedAt, report: buildSalesReport(salesData.currentGame) } });
-});
-
-function buildSalesReport(game) {
-  const report = { locals: {}, totals: { cards: 0, revenue: 0, prizes: 0, net: 0 } };
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    const key = `local_${i}`;
-    const sales = game.sales?.[key] || [];
-    const prizes = game.prizes?.[key] || [];
-    const revenue = sales.length * CARD_PRICE;
-    const prizesTotal = prizes.reduce((s, p) => s + (p.amount || 0), 0);
-    report.locals[key] = {
-      name: gameState.localNames[key] || `Local ${i}`,
-      cardsSold: sales.length, revenue, prizes: prizesTotal,
-      net: revenue - prizesTotal,
-      salesDetail: sales, prizesDetail: prizes
-    };
-    report.totals.cards += sales.length;
-    report.totals.revenue += revenue;
-    report.totals.prizes += prizesTotal;
-    report.totals.net += revenue - prizesTotal;
-  }
-  return report;
-}
-
-server.listen(PORT, () => {
-  console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
 });
