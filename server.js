@@ -10,7 +10,7 @@ const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 8080;
 const NUM_LOCALS = 10;
 const CARDS_PER_LOCAL = 21;
-const ROUND_MINUTES = 15;
+const ROUND_MINUTES = 10;
 
 // ── GAME STATE ──────────────────────────────────────────────────────
 let gameState = {
