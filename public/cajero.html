@@ -86,8 +86,24 @@ body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
     <div class="stat"><div class="sv" id="st-income">$0</div><div class="sl">Ingresos</div></div>
   </div>
 
+  <!-- Lock banner -->
+  <div id="lock-banner" style="display:none;background:#330000;border-bottom:1px solid #ff444433;
+    padding:10px 14px;align-items:center;justify-content:center;gap:8px">
+    <span style="font-size:20px">🔒</span>
+    <div style="text-align:center">
+      <div style="font-size:12px;color:#ff6644;font-weight:700;font-family:'Cinzel Decorative',serif">PANEL BLOQUEADO</div>
+      <div style="font-size:10px;color:#ff9944">Esperando nueva partida...</div>
+    </div>
+  </div>
+
   <div id="sell-form">
-    <p>VENDER CARTÓN</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <p style="margin:0">VENDER CARTÓN</p>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:9px;color:#888">Cierra en:</span>
+        <span id="cajero-timer" style="font-size:13px;font-weight:900;color:#44ff88;font-family:'Cinzel Decorative',serif">9:00</span>
+      </div>
+    </div>
     <div id="sell-row">
       <input type="number" id="sell-num" placeholder="Nº" min="1" max="21">
       <input type="text" id="sell-name" placeholder="Nombre del jugador..." maxlength="30">
@@ -105,9 +121,86 @@ body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
 <script>
 let token = localStorage.getItem('cajero_token');
 let localId = 0;
-let soldCards = {}; // cardIdx → playerName
+let soldCards = {};
+let cajeroLocked = false;
+let cajeroTimer = null;
+let cajeroSecsLeft = 0;
+let ws = null;
 
-if(token){ showMain(); loadSales(); }
+if(token){ showMain(); loadSales(); connectWS(); }
+
+function connectWS(){
+  if(!token) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen = () => console.log('WS connected');
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if(msg.type === 'cajero_open'){
+      unlockCajero(msg.secondsToClose);
+    } else if(msg.type === 'cajero_close'){
+      lockCajero();
+    } else if(msg.type === 'card_sold_confirm'){
+      // another session sold a card
+    } else if(msg.type === 'sales_report_auto'){
+      showSalesReport(msg.report);
+    }
+  };
+  ws.onclose = () => setTimeout(connectWS, 3000);
+}
+
+function unlockCajero(secsToClose){
+  cajeroLocked = false;
+  cajeroSecsLeft = secsToClose || 540;
+  updateLockUI();
+  clearInterval(cajeroTimer);
+  cajeroTimer = setInterval(()=>{
+    cajeroSecsLeft--;
+    updateTimerUI();
+    if(cajeroSecsLeft <= 0){ clearInterval(cajeroTimer); lockCajero(); }
+  }, 1000);
+}
+
+function lockCajero(){
+  cajeroLocked = true;
+  clearInterval(cajeroTimer);
+  updateLockUI();
+}
+
+function updateLockUI(){
+  const form = document.getElementById('sell-form');
+  const lockBanner = document.getElementById('lock-banner');
+  if(cajeroLocked){
+    form.style.opacity = '0.4';
+    form.style.pointerEvents = 'none';
+    if(lockBanner) lockBanner.style.display = 'flex';
+  } else {
+    form.style.opacity = '1';
+    form.style.pointerEvents = 'auto';
+    if(lockBanner) lockBanner.style.display = 'none';
+  }
+}
+
+function updateTimerUI(){
+  const el = document.getElementById('cajero-timer');
+  if(!el) return;
+  const m = Math.floor(cajeroSecsLeft/60);
+  const s = cajeroSecsLeft % 60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.style.color = cajeroSecsLeft <= 60 ? '#ff4466' : cajeroSecsLeft <= 120 ? '#ffaa00' : '#44ff88';
+}
+
+function showSalesReport(report){
+  const el = document.getElementById('sell-msg');
+  if(!el) return;
+  const myKey = `local_${localId}`;
+  const local = report.locals[myKey];
+  if(local){
+    el.style.color = '#ffd700';
+    el.textContent = `✅ Partida cerrada: ${local.cardsSold} cartones · $${local.revenue} pesos`;
+    setTimeout(()=>el.textContent='', 8000);
+  }
+}
 
 async function doLogin(){
   const user = document.getElementById('lu').value.trim().toLowerCase();
@@ -123,6 +216,7 @@ async function doLogin(){
     document.getElementById('local-title').textContent = '✦ ' + d.name;
     showMain();
     loadSales();
+    connectWS();
   }catch(e){errEl.textContent = 'Error de conexión';}
 }
 
