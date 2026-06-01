@@ -135,7 +135,11 @@ function connectWS(){
   if(!token) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => console.log('WS connected');
+  ws.onopen = () => {
+    // Join as cajero so server sends countdown updates
+    ws.send(JSON.stringify({ type: 'join_cajero', localId }));
+    console.log('Cajero WS connected, localId:', localId);
+  };
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if(msg.type === 'cajero_open'){
@@ -196,10 +200,20 @@ function updateLockUI(){
 function updateTimerUI(){
   const el = document.getElementById('cajero-timer');
   if(!el) return;
-  const m = Math.floor(cajeroSecsLeft/60);
-  const s = cajeroSecsLeft % 60;
+  const secs = Math.max(0, cajeroSecsLeft);
+  const m = Math.floor(secs/60);
+  const s = secs % 60;
   el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  el.style.color = cajeroSecsLeft <= 60 ? '#ff4466' : cajeroSecsLeft <= 120 ? '#ffaa00' : '#44ff88';
+  if(secs <= 60){
+    el.style.color='#ff4466';
+    el.style.textShadow='0 0 30px #ff446699,0 0 60px #ff446633';
+  } else if(secs <= 120){
+    el.style.color='#ffaa00';
+    el.style.textShadow='0 0 30px #ffaa0099,0 0 60px #ffaa0033';
+  } else {
+    el.style.color='#44ff88';
+    el.style.textShadow='0 0 30px #44ff8899,0 0 60px #44ff8833';
+  }
 }
 
 function showSalesReport(report){
