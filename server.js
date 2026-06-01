@@ -292,6 +292,12 @@ wss.on('connection', (ws, req) => {
         if (autoDrawRunning) stopAutoDraw();
         else startAutoDraw();
         break;
+      case 'start_auto':
+        startAutoDraw();
+        break;
+      case 'stop_auto':
+        stopAutoDraw();
+        break;
 
       case 'card_sold': {
         // Local reports a card was sold
