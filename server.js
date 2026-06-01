@@ -20,6 +20,18 @@ for(let i=1;i<=21;i++){
     name: `Local ${i}`
   };
 }
+
+const CARD_PRICE = 50;
+const fs = require('fs');
+const SALES_FILE = './sales_data.json';
+let salesData = { games: [], currentGame: { gameId: Date.now(), startedAt: null, sales: {}, prizes: {} } };
+try {
+  if (fs.existsSync(SALES_FILE)) { salesData = JSON.parse(fs.readFileSync(SALES_FILE,'utf8')); }
+} catch(e) {}
+function saveSalesData() {
+  try { fs.writeFileSync(SALES_FILE, JSON.stringify(salesData)); } catch(e) {}
+}
+
 const ROUND_MINUTES = 10;
 
 // ── GAME STATE ──────────────────────────────────────────────────────
