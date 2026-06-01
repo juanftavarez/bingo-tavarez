@@ -405,9 +405,11 @@ wss.on('connection', (ws, req) => {
         break;
 
       case 'reset':
-        stopCountdown();
         stopAutoDraw();
         waitingForPlay = true;
+        // Restart countdown so cajero opens
+        stopCountdown();
+        startCountdown();
         gameState.drawnNumbers = [];
         gameState.prizes = initPrizes();
         gameState.cards = generateAllCards();
