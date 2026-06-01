@@ -291,8 +291,9 @@ function connect(){
         document.querySelectorAll('.ball').forEach(b=>b.classList.remove('drawn'));
         document.getElementById('prize-log-list').innerHTML='<div style="font-size:11px;color:#555;text-align:center;padding:8px">Sin premios aún</div>';
         updateDrawnList();resetSlot();
-        // Auto starts — server handles draw automatically
         autoRunning=true;
+        if(document.getElementById('ball-grid-drawn-count'))
+          document.getElementById('ball-grid-drawn-count').textContent='0 cantados';
         break;
       case 'draw':
         if(!drawnNums.has(msg.n)){
