@@ -142,6 +142,16 @@ function connectWS(){
       unlockCajero(msg.secondsToClose);
     } else if(msg.type === 'cajero_close'){
       lockCajero();
+    } else if(msg.type === 'countdown'){
+      // Sync with server countdown - cajero closes at 60s remaining
+      if(!cajeroLocked && msg.seconds > 60){
+        cajeroSecsLeft = msg.seconds - 60;
+        updateTimerUI();
+      }
+    } else if(msg.type === 'new_game'){
+      soldCards = {};
+      renderList();
+      updateStats();
     } else if(msg.type === 'card_sold_confirm'){
       // another session sold a card
     } else if(msg.type === 'sales_report_auto'){
