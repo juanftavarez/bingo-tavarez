@@ -242,11 +242,13 @@ function startNewGame() {
     salesData.games.unshift(salesData.currentGame); // newest first
     if (salesData.games.length > 100) salesData.games = salesData.games.slice(0, 100);
   }
-  // Start new game tracking
+  // Keep sales from the selling window (collected during countdown)
+  // They belong to this new game
+  const keptSales = salesData.currentGame.sales || {};
   salesData.currentGame = {
     gameId: Date.now(),
     startedAt: new Date().toISOString(),
-    sales: {},
+    sales: keptSales, // keep names already entered
     prizes: {}
   };
   saveSalesData();
@@ -306,6 +308,14 @@ wss.on('connection', (ws, req) => {
           sales: salesData ? salesData.currentGame.sales : {}
         });
         broadcastLocalsUpdate();
+        break;
+
+      case 'join_cajero':
+        clients.set(ws, { role: 'cajero', localId: msg.localId });
+        // Send current countdown state
+        if (gameState.countdownActive) {
+          sendTo(ws, { type: 'countdown', seconds: countdownSeconds });
+        }
         break;
 
       case 'join_local':
