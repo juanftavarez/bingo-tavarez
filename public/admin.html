@@ -104,19 +104,22 @@ function renderReport(report, game){
 
   const tbody=document.getElementById('locals-table');
   tbody.innerHTML='';
-  Object.entries(report.locals).forEach(([key,local])=>{
-    if(!local.cardsSold&&!local.prizes.length) return;
-    const net2=local.revenue-local.prizes;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><b>${local.name}</b></td>
-      <td>${local.cardsSold}</td>
-      <td style="color:#44ff88">$${local.revenue.toLocaleString()}</td>
-      <td style="color:#ff4466">$${local.prizes.toLocaleString()}</td>
-      <td><span class="badge ${net2>=0?'badge-green':'badge-red'}">$${net2.toLocaleString()}</span></td>`;
-    tr.style.cursor='pointer';
-    tr.onclick=()=>showLocalDetail(key,local);
-    tbody.appendChild(tr);
-  });
+  Object.entries(report.locals)
+    .filter(([,l])=>l.cardsSold>0||l.prizesDetail?.length>0)
+    .sort((a,b)=>b[1].cardsSold-a[1].cardsSold)
+    .forEach(([key,local])=>{
+      const net2=local.revenue-local.prizes;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><b>${local.name}</b></td>
+        <td><b style="color:#ffd700">${local.cardsSold}</b> cartones</td>
+        <td style="color:#44ff88">$${local.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${local.prizes.toLocaleString()}</td>
+        <td><span class="badge ${net2>=0?'badge-green':'badge-red'}">$${net2.toLocaleString()}</span></td>`;
+      tr.style.cursor='pointer';
+      tr.title='Click para ver detalle';
+      tr.onclick=()=>showLocalDetail(key,local);
+      tbody.appendChild(tr);
+    });
   if(!tbody.children.length){
     tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#555;padding:16px">Sin ventas aún</td></tr>';
   }
