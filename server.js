@@ -111,6 +111,7 @@ const DRAW_INTERVAL_MS = 5500; // ms between balls
 
 function startAutoDraw() {
   if (autoDrawRunning) return;
+  if (waitingForPlay) return; // waiting for host to press PLAY
   autoDrawRunning = true;
   broadcastAll({ type: 'auto_started' });
   autoDrawInterval = setInterval(() => {
@@ -142,6 +143,8 @@ function stopAutoDraw() {
   broadcastAll({ type: 'auto_stopped' });
 }
 
+let waitingForPlay = false; // true after reset, waiting for PLAY button
+
 function startCountdown(seconds = ROUND_MINUTES * 60) {
   countdownSeconds = seconds;
   gameState.countdownActive = true;
@@ -152,8 +155,9 @@ function startCountdown(seconds = ROUND_MINUTES * 60) {
     if (countdownSeconds <= 0) {
       clearInterval(countdownInterval);
       countdownInterval = null;
-      // Auto start new game
+      waitingForPlay = false; // auto-start from countdown is OK
       startNewGame();
+      setTimeout(() => startAutoDraw(), 2000);
     }
   }, 1000);
 }
@@ -238,8 +242,7 @@ function startNewGame() {
   });
   sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
 
-  // Auto-start drawing after 3 seconds
-  setTimeout(() => startAutoDraw(), 3000);
+  // Auto draw starts via PLAY button in host or after countdown
 }
 
 function getHostWs() {
@@ -294,6 +297,7 @@ wss.on('connection', (ws, req) => {
         else startAutoDraw();
         break;
       case 'start_auto':
+        waitingForPlay = false;
         startAutoDraw();
         break;
       case 'stop_auto':
@@ -395,6 +399,8 @@ wss.on('connection', (ws, req) => {
 
       case 'reset':
         stopCountdown();
+        stopAutoDraw();
+        waitingForPlay = true;
         gameState.drawnNumbers = [];
         gameState.prizes = initPrizes();
         gameState.cards = generateAllCards();
