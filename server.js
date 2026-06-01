@@ -180,6 +180,22 @@ function broadcastLocalsUpdate() {
 
 // ── START NEW GAME ───────────────────────────────────────────────────
 function startNewGame() {
+  // Archive current game to history
+  if (salesData.currentGame.startedAt) {
+    salesData.currentGame.endedAt = new Date().toISOString();
+    salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
+    salesData.games.unshift(salesData.currentGame); // newest first
+    if (salesData.games.length > 100) salesData.games = salesData.games.slice(0, 100);
+  }
+  // Start new game tracking
+  salesData.currentGame = {
+    gameId: Date.now(),
+    startedAt: new Date().toISOString(),
+    sales: {},
+    prizes: {}
+  };
+  saveSalesData();
+
   gameState.drawnNumbers = [];
   gameState.active = true;
   gameState.cards = generateAllCards();
@@ -254,6 +270,48 @@ wss.on('connection', (ws, req) => {
         if (autoDrawRunning) stopAutoDraw();
         else startAutoDraw();
         break;
+
+      case 'card_sold': {
+        // Local reports a card was sold
+        const { cardIdx, playerName, price } = msg;
+        const localKey = `local_${info.localId}`;
+        if (!salesData.currentGame.sales[localKey]) salesData.currentGame.sales[localKey] = [];
+        // Check not already sold
+        const alreadySold = salesData.currentGame.sales[localKey].some(s => s.cardIdx === cardIdx);
+        if (!alreadySold) {
+          salesData.currentGame.sales[localKey].push({
+            cardIdx,
+            playerName: playerName || `Cartón ${cardIdx+1}`,
+            price: price || CARD_PRICE,
+            soldAt: new Date().toISOString()
+          });
+          saveSalesData();
+          // Broadcast sold status to all in same local
+          broadcastAll({ type: 'card_sold_confirm', localId: info.localId, cardIdx, playerName: playerName || `Cartón ${cardIdx+1}` });
+          // Notify host
+          sendTo(getHostWs(), { type: 'sales_update', localId: info.localId, sales: salesData.currentGame.sales[localKey] });
+        }
+        break;
+      }
+
+      case 'card_unsold': {
+        // Undo a sale
+        const localKey2 = `local_${info.localId}`;
+        if (salesData.currentGame.sales[localKey2]) {
+          salesData.currentGame.sales[localKey2] = salesData.currentGame.sales[localKey2].filter(s => s.cardIdx !== msg.cardIdx);
+          saveSalesData();
+          broadcastAll({ type: 'card_unsold_confirm', localId: info.localId, cardIdx: msg.cardIdx });
+          sendTo(getHostWs(), { type: 'sales_update', localId: info.localId, sales: salesData.currentGame.sales[localKey2] });
+        }
+        break;
+      }
+
+      case 'get_sales_report': {
+        // Host requests full sales report
+        if (info.role !== 'host') break;
+        res_sales(ws);
+        break;
+      }
 
       case 'draw':
         if (!gameState.drawnNumbers.includes(msg.n)) {
