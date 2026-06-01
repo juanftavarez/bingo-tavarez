@@ -400,6 +400,10 @@ function connect(){
         }
         if(msg.prizes)restorePrizes(msg.prizes);
         if(msg.countdownActive&&msg.countdown)updateCD(msg.countdown);
+        // Restore sold card names from sales data
+        if(msg.sales && msg.sales.length){
+          msg.sales.forEach(s=>handleCardSoldConfirm(LOCAL_ID, s.cardIdx, s.playerName));
+        }
         break;
       case 'new_game':
         gameOver=false;
