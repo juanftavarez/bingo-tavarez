@@ -367,9 +367,11 @@ function addPrizeLog(msg){
   const empty=list.querySelector('[style]');if(empty)empty.remove();
   const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
   const lname=localNames[`local_${msg.localId}`]||`Local ${msg.localId}`;
+  const cardName=msg.playerName||`Cartón ${msg.cardIdx+1}`;
+  const prizeLabel=info.msg.replace('¡','').replace('!','').trim();
   const entry=document.createElement('div');
   entry.className='prize-entry';
-  entry.innerHTML=`<span class="pe-info">${info.icon} ${info.msg} — ${msg.playerName||`Cartón ${msg.cardIdx+1}`}</span>
+  entry.innerHTML=`<span class="pe-info" style="color:${info.color}">${info.icon} ${cardName} gana ${prizeLabel} — ${info.prize}</span>
     <span class="pe-local">${lname}</span>`;
   list.prepend(entry);
 }
@@ -469,17 +471,8 @@ function toggleAuto(){
 
 // Winner popup
 function showWinner(msg){
-  const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
-  const lname=localNames[`local_${msg.localId}`]||`Local ${msg.localId}`;
-  document.getElementById('w-icon').textContent=info.icon;
-  document.getElementById('w-local-name').textContent=lname;
-  document.getElementById('w-title').textContent=info.msg;
-  document.getElementById('w-name').textContent=msg.playerName||`Cartón ${msg.cardIdx+1}`;
-  document.getElementById('w-prize').textContent=info.prize;
-  document.getElementById('w-sub').textContent=msg.prize==='fullCard'?'¡GRAN PREMIO FINAL!':'Continúa en 10s...';
-  document.getElementById('winner-ov').classList.add('show');
-  launchFW();
-  if(msg.prize!=='fullCard')setTimeout(closeWinner,3000);
+  // Host does NOT show winner popup — only the prize log
+  // Popup disabled on host screen intentionally
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
