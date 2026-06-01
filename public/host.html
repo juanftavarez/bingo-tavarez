@@ -170,6 +170,7 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
     <div id="controls">
       <button class="ctrl-btn" id="btn-new" onclick="newGame()">🎮 NUEVA PARTIDA</button>
       <button class="ctrl-btn" id="btn-reset" onclick="resetGame()">🔄 RESET</button>
+      <button class="ctrl-btn" id="btn-play" onclick="playGame()" style="background:linear-gradient(135deg,#003300,#006600);color:#44ff88;border-color:#44ff88">▶ PLAY</button>
 
     </div>
 
@@ -467,6 +468,7 @@ function resetSlot(){
 
 // Game controls
 function newGame(){if(!confirm('¿Nueva partida? Se generan nuevos cartones para todos.'))return;ws.send(JSON.stringify({type:'new_game'}));}
+function playGame(){ws.send(JSON.stringify({type:'start_auto'}));}
 function resetGame(){if(!confirm('¿Resetear partida?'))return;ws.send(JSON.stringify({type:'reset'}));}
 function toggleAuto(){
   const btn=document.getElementById('btn-auto');
