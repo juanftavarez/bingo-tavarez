@@ -342,14 +342,14 @@ const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
 const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
 const PRIZES_INFO={
-  COSITA:  {icon:'🎯',color:'#ff9944',msg:'¡LA COSITA!',    prize:'$50 pesos', amount:50},
-  MEDIO:   {icon:'〰️',color:'#ff44aa',msg:'¡EL MEDIO!',     prize:'$50 pesos', amount:50},
-  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$50 pesos', amount:50},
-  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$50 pesos', amount:50},
-  X:       {icon:'✖️', color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$50 pesos', amount:50},
-  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$50 pesos', amount:50},
-  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$150 pesos',amount:150},
-  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$500 pesos',amount:500},
+  COSITA:  {icon:'🎯',color:'#ff9944',msg:'¡LA COSITA!',prizeLabel:'la Cosita',     prize:'$50 pesos', amount:50},
+  MEDIO:   {icon:'〰️',color:'#ff44aa',msg:'¡EL MEDIO!', prizeLabel:'el Medio',      prize:'$50 pesos', amount:50},
+  L:       {icon:'𝕃', color:'#44ff88',msg:'¡LA L!',    prizeLabel:'la L',          prize:'$50 pesos', amount:50},
+  T:       {icon:'𝕋', color:'#ee88ff',msg:'¡LA T!',    prizeLabel:'la T',          prize:'$50 pesos', amount:50},
+  X:       {icon:'✖️', color:'#ff88aa',msg:'¡LA X!',    prizeLabel:'la X',          prize:'$50 pesos', amount:50},
+  CRUZ:    {icon:'✚', color:'#88ffff',msg:'¡LA CRUZ!', prizeLabel:'la Cruz',       prize:'$50 pesos', amount:50},
+  line:    {icon:'⭐',color:'#00ffcc',msg:'¡EL BINGO!', prizeLabel:'el Bingo',     prize:'$150 pesos',amount:150},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prizeLabel:'Cartón Lleno', prize:'$500 pesos',amount:500},
 };
 const PATTERNS={
   L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
@@ -870,21 +870,26 @@ function resetSlot(){
 function showWinner(msg){
   const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
   const doubled = msg.x2 ? info.amount * 2 : info.amount;
-  const prizeStr = msg.x2 ? `$${doubled} ×2` : `$${info.amount}`;
+  const amt = msg.x2 ? doubled : info.amount;
+  const cardNum = msg.cardIdx+1;
+  const cardName = msg.playerName || `Cartón ${cardNum}`;
+
+  // Build display text: "Cartón 5 gana el Bingo $150 pesos"
+  const prizeLabel = info.prizeLabel || info.msg.replace('¡','').replace('!','').trim();
   document.getElementById('w-icon').textContent = msg.x2 ? '✨' : info.icon;
   document.getElementById('w-title').textContent = msg.x2
-    ? `${info.msg} — ¡BONO X2!`
-    : info.msg;
-  document.getElementById('w-name').textContent = msg.playerName || `Cartón ${msg.cardIdx+1}`;
-  document.getElementById('w-prize').textContent = prizeStr;
+    ? `${cardName} gana ${prizeLabel} ¡BONO X2!`
+    : `${cardName} gana ${prizeLabel}`;
+  document.getElementById('w-name').textContent = '';
+  document.getElementById('w-prize').textContent = '$' + amt + ' pesos' + (msg.x2 ? ' ×2' : '');
   document.getElementById('w-sub').textContent = msg.prize==='fullCard'
-    ? (msg.x2 ? `¡GRAN PREMIO FINAL DOBLE! 🎉` : '¡GRAN PREMIO FINAL! 🎉')
-    : (msg.x2 ? `¡Premio doble! Continúa en 3s...` : 'Continúa en 3s...');
+    ? '¡GRAN PREMIO FINAL! 🎉'
+    : '';
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
   clearTimeout(window._winnerTimer);
   if(msg.prize==='fullCard') window._winnerTimer = setTimeout(closeWinner, 60000);
-  else window._winnerTimer = setTimeout(closeWinner, 3000);
+  else window._winnerTimer = setTimeout(closeWinner, 7000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
