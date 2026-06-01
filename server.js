@@ -428,6 +428,115 @@ app.get('/cajero', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ca
 app.get('/admin',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/', (req, res) => res.redirect('/host'));
 
+// ── CAJERO & ADMIN API ───────────────────────────────────────────────
+app.post('/api/cajero/login', (req, res) => {
+  const { username, password } = req.body || {};
+  const user = CAJERO_USERS[username];
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  }
+  const token = Buffer.from(`${username}:${password}:${user.localId}`).toString('base64');
+  res.json({ ok: true, localId: user.localId, name: user.name, token });
+});
+
+function verifyCajero(req) {
+  const auth = (req.headers.authorization || '').replace('Bearer ', '');
+  try {
+    const decoded = Buffer.from(auth, 'base64').toString('utf8');
+    const parts = decoded.split(':');
+    const localId = parts[2];
+    const username = parts[0];
+    const password = parts[1];
+    const user = CAJERO_USERS[username];
+    if (!user || user.password !== password) return null;
+    return { localId: parseInt(localId), username };
+  } catch(e) { return null; }
+}
+
+app.get('/api/cajero/cards', (req, res) => {
+  const user = verifyCajero(req);
+  if (!user) return res.status(401).json({ error: 'No autorizado' });
+  const localKey = `local_${user.localId}`;
+  const cards = gameState.cards[localKey] || [];
+  const sales = salesData.currentGame.sales[localKey] || [];
+  const soldMap = {};
+  sales.forEach(s => { soldMap[s.cardIdx] = s.playerName; });
+  res.json({
+    localId: user.localId,
+    localName: gameState.localNames[localKey] || `Local ${user.localId}`,
+    gameActive: gameState.active,
+    cards: cards.map((card, i) => ({
+      idx: i, grid: card,
+      sold: soldMap[i] !== undefined,
+      playerName: soldMap[i] || ''
+    }))
+  });
+});
+
+app.post('/api/cajero/sell', (req, res) => {
+  const user = verifyCajero(req);
+  if (!user) return res.status(401).json({ error: 'No autorizado' });
+  const { cardIdx, playerName, action } = req.body || {};
+  const localKey = `local_${user.localId}`;
+  if (!salesData.currentGame.sales[localKey]) salesData.currentGame.sales[localKey] = [];
+  if (action === 'sell') {
+    const alreadySold = salesData.currentGame.sales[localKey].some(s => s.cardIdx === cardIdx);
+    if (!alreadySold) {
+      salesData.currentGame.sales[localKey].push({
+        cardIdx, playerName: playerName || `Cartón ${cardIdx+1}`,
+        price: CARD_PRICE, soldAt: new Date().toISOString()
+      });
+      saveSalesData();
+      broadcastAll({ type: 'card_sold_confirm', localId: user.localId, cardIdx, playerName: playerName || `Cartón ${cardIdx+1}` });
+    }
+  } else if (action === 'unsell') {
+    salesData.currentGame.sales[localKey] = salesData.currentGame.sales[localKey].filter(s => s.cardIdx !== cardIdx);
+    saveSalesData();
+    broadcastAll({ type: 'card_unsold_confirm', localId: user.localId, cardIdx });
+  }
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body || {};
+  if (password !== 'admin2024') return res.status(401).json({ error: 'Contraseña incorrecta' });
+  res.json({ ok: true, token: Buffer.from('admin:admin2024').toString('base64') });
+});
+
+app.get('/api/sales/current', (req, res) => {
+  res.json({ game: salesData.currentGame, report: buildSalesReport(salesData.currentGame) });
+});
+
+app.get('/api/sales/history', (req, res) => {
+  const history = salesData.games.slice(0, 50).map(g => ({
+    gameId: g.gameId, startedAt: g.startedAt, endedAt: g.endedAt,
+    report: buildSalesReport(g)
+  }));
+  res.json({ history, currentGame: { gameId: salesData.currentGame.gameId, startedAt: salesData.currentGame.startedAt, report: buildSalesReport(salesData.currentGame) } });
+});
+
+function buildSalesReport(game) {
+  const report = { locals: {}, totals: { cards: 0, revenue: 0, prizes: 0, net: 0 } };
+  for (let i = 1; i <= NUM_LOCALS; i++) {
+    const key = `local_${i}`;
+    const sales = game.sales?.[key] || [];
+    const prizes = game.prizes?.[key] || [];
+    const revenue = sales.length * CARD_PRICE;
+    const prizesTotal = prizes.reduce((s, p) => s + (p.amount || 0), 0);
+    report.locals[key] = {
+      name: gameState.localNames[key] || `Local ${i}`,
+      cardsSold: sales.length, revenue, prizes: prizesTotal,
+      net: revenue - prizesTotal,
+      salesDetail: sales, prizesDetail: prizes
+    };
+    report.totals.cards += sales.length;
+    report.totals.revenue += revenue;
+    report.totals.prizes += prizesTotal;
+    report.totals.net += revenue - prizesTotal;
+  }
+  return report;
+}
+
 server.listen(PORT, () => {
   console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
 });
