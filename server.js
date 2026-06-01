@@ -418,6 +418,8 @@ wss.on('connection', (ws, req) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/host', (req, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
 app.get('/local/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'local.html')));
+app.get('/cajero', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cajero.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/', (req, res) => res.redirect('/host'));
 
 server.listen(PORT, () => {
