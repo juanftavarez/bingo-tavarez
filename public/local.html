@@ -112,6 +112,12 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
   border-radius:9px;padding:4px 4px 5px;display:flex;flex-direction:column;gap:2px;
   box-shadow:0 2px 6px rgba(0,0,80,.1)}
 .card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px;flex-wrap:wrap}
+.sold-overlay{position:absolute;inset:0;background:rgba(0,40,0,.85);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:2}
+.sold-overlay .sold-badge{font-family:'Cinzel Decorative',serif;font-size:13px;color:#44ff88;
+  font-weight:900;letter-spacing:2px;text-align:center}
+.sold-overlay .sold-player{font-size:11px;color:#aaffaa;margin-top:4px;text-align:center;
+  max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
   font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:900;
   width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -815,10 +821,23 @@ function toggleSold(ci){
 function handleCardSoldConfirm(localId, cardIdx, playerName){
   if(localId !== LOCAL_ID) return;
   soldCards.add(cardIdx);
-  const btn=document.getElementById(`sold-btn-${cardIdx}`);
   const cardEl=document.getElementById(`card-${cardIdx}`);
-  if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';btn.style.borderColor='#44ff8844';}
-  if(cardEl) cardEl.style.outline='2px solid #44ff8866';
+  if(cardEl){
+    cardEl.style.outline='2px solid #44ff8866';
+    // Add sold overlay in center of card
+    let overlay=cardEl.querySelector('.sold-overlay');
+    if(!overlay){
+      overlay=document.createElement('div');
+      overlay.className='sold-overlay';
+      cardEl.style.position='relative';
+      cardEl.appendChild(overlay);
+    }
+    overlay.innerHTML=`<div class="sold-badge">✅ VENDIDO</div><div class="sold-player">${playerName||''}</div>`;
+  }
+  const inp=document.getElementById(`name-${cardIdx}`);
+  if(inp) inp.value=playerName||'';
+  const btn=document.getElementById(`sold-btn-${cardIdx}`);
+  if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';}
 }
 
 function checkWin(ci){
