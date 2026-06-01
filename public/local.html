@@ -425,13 +425,32 @@ function connect(){
         setTimeout(()=>markNumber(msg.n,true),2300);break;
       case 'prize_won':
         if(msg.localId === LOCAL_ID) {
-          // OUR local won — update prize panel + show winner popup
           prizes[msg.prize] = true;
           markPrizePanelWon(msg.prize);
           showWinner(msg);
         } else {
-          // ANOTHER local won — only show in ticker
           addTickerItem(msg);
+        }
+        break;
+      case 'card_sold_confirm':
+        if(msg.localId === LOCAL_ID){
+          // Update name input on the card
+          const inp = document.getElementById(`name-${msg.cardIdx}`);
+          if(inp) inp.value = msg.playerName;
+          const btn = document.getElementById(`sold-btn-${msg.cardIdx}`);
+          if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';}
+          const cardEl = document.getElementById(`card-${msg.cardIdx}`);
+          if(cardEl) cardEl.style.outline='2px solid #44ff8866';
+        }
+        break;
+      case 'card_unsold_confirm':
+        if(msg.localId === LOCAL_ID){
+          const inp2 = document.getElementById(`name-${msg.cardIdx}`);
+          if(inp2) inp2.value = '';
+          const btn2 = document.getElementById(`sold-btn-${msg.cardIdx}`);
+          if(btn2){btn2.textContent='VENDER';btn2.style.background='#1a0840';btn2.style.color='#aaa';}
+          const cardEl2 = document.getElementById(`card-${msg.cardIdx}`);
+          if(cardEl2) cardEl2.style.outline='';
         }
         break;
       case 'name_update':
