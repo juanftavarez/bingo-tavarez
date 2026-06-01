@@ -147,13 +147,18 @@ function connectWS(){
     } else if(msg.type === 'cajero_close'){
       lockCajero();
     } else if(msg.type === 'countdown'){
-      // Sync with server countdown - cajero closes at 60s remaining
-      if(!cajeroLocked && msg.seconds > 60){
+      // Always sync timer with server
+      if(msg.seconds > 60){
         cajeroSecsLeft = msg.seconds - 60;
+        updateTimerUI();
+      } else if(msg.seconds <= 60 && !cajeroLocked){
+        // Should be locked already but force it
+        cajeroSecsLeft = 0;
         updateTimerUI();
       }
     } else if(msg.type === 'new_game'){
-      soldCards = {};
+      // Keep soldCards - names were entered during countdown window
+      // They will be cleared after the game ends and archived
       renderList();
       updateStats();
     } else if(msg.type === 'card_sold_confirm'){
@@ -168,13 +173,9 @@ function connectWS(){
 function unlockCajero(secsToClose){
   cajeroLocked = false;
   cajeroSecsLeft = secsToClose || 540;
+  clearInterval(cajeroTimer); // no local timer - server drives via countdown
   updateLockUI();
-  clearInterval(cajeroTimer);
-  cajeroTimer = setInterval(()=>{
-    cajeroSecsLeft--;
-    updateTimerUI();
-    if(cajeroSecsLeft <= 0){ clearInterval(cajeroTimer); lockCajero(); }
-  }, 1000);
+  updateTimerUI();
 }
 
 function lockCajero(){
