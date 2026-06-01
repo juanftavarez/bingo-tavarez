@@ -340,12 +340,12 @@ const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
 const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
 const PRIZES_INFO={
-  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$15', amount:15},
-  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$15', amount:15},
-  X:       {icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$15', amount:15},
-  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$15', amount:15},
-  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$50', amount:50},
-  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$100',amount:100},
+  L:       {icon:'🏅',color:'#44ff88',msg:'¡FIGURA L!',     prize:'$50', amount:50},
+  T:       {icon:'🏅',color:'#ee88ff',msg:'¡FIGURA T!',     prize:'$50', amount:50},
+  X:       {icon:'🏅',color:'#ff88aa',msg:'¡FIGURA X!',     prize:'$50', amount:50},
+  CRUZ:    {icon:'✝️', color:'#88ffff',msg:'¡LA CRUZ!',      prize:'$50', amount:50},
+  line:    {icon:'🏆',color:'#00ffcc',msg:'¡BINGO!',         prize:'$150',amount:150},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!', prize:'$500',amount:500},
 };
 const PATTERNS={
   L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
@@ -406,7 +406,7 @@ function connect(){
         drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();
         x2Number = pickX2Number(msg.cards);
-        resetPrizePanel();resetSlot();updateCD(900);
+        resetPrizePanel();resetSlot();updateCD(600);
         setStatus('¡Nueva partida! 🎉');
         // Only update name if explicitly provided AND hasn't been manually changed
         if(msg.localName && !localNameManuallySet) {
@@ -597,12 +597,12 @@ let allLocalNames = {}; // updated from server
 const tickerItems = []; // prize history for ticker
 
 const PRIZES_INFO_TICKER = {
-  L:       {icon:'🏅', label:'Figura L',    prize:'$15'},
-  T:       {icon:'🏅', label:'Figura T',    prize:'$15'},
-  X:       {icon:'🏅', label:'Figura X',    prize:'$15'},
-  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$15'},
-  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$50'},
-  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$100'},
+  L:       {icon:'🏅', label:'Figura L',    prize:'$50'},
+  T:       {icon:'🏅', label:'Figura T',    prize:'$50'},
+  X:       {icon:'🏅', label:'Figura X',    prize:'$50'},
+  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$50'},
+  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$150'},
+  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$500'},
 };
 
 function addTickerItem(msg) {
