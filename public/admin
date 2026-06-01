@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Bingo Tavarez</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#060310;color:#fff;font-family:'Cinzel',serif;padding:16px;min-height:100vh}
+h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:18px;text-align:center;margin-bottom:20px;letter-spacing:2px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tab{padding:8px 16px;border:1px solid #d4a93a44;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;color:#888;background:#0a0220}
+.tab.active{background:#d4a93a;color:#000;font-weight:700}
+.panel{display:none}.panel.active{display:block}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.summary-card{background:#0a0220;border:1px solid #d4a93a33;border-radius:10px;padding:14px;text-align:center}
+.summary-card .val{font-family:'Cinzel Decorative',serif;font-size:22px;color:#ffd700;font-weight:900}
+.summary-card .lbl{font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.summary-card.green .val{color:#44ff88}
+.summary-card.red .val{color:#ff4466}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#1a0840;color:#d4a93a;padding:8px 10px;text-align:left;letter-spacing:1px;font-size:10px}
+td{padding:8px 10px;border-bottom:1px solid #ffffff08}
+tr:hover td{background:#0a0220}
+.badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700}
+.badge-green{background:#003300;color:#44ff88}
+.badge-red{background:#330000;color:#ff4466}
+.badge-gold{background:#332200;color:#ffd700}
+.btn{padding:8px 16px;border:1px solid #d4a93a55;border-radius:8px;cursor:pointer;
+  font-family:'Cinzel',serif;font-size:11px;color:#d4a93a;background:#0a0220;margin-right:6px}
+.btn:hover{background:#d4a93a;color:#000}
+select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;
+  color:#fff;font-family:'Cinzel',serif;font-size:11px;outline:none;margin-right:8px}
+</style>
+</head>
+<body>
+<h1>✦ BINGO TAVAREZ — ADMIN ✦</h1>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('current')">Partida Actual</div>
+  <div class="tab" onclick="showTab('history')">Historial</div>
+</div>
+
+<div id="panel-current" class="panel active">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+    <button class="btn" onclick="loadReport()">↻ Actualizar</button>
+    <span id="report-time" style="font-size:10px;color:#555"></span>
+  </div>
+
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-card"><div class="val" id="s-cards">-</div><div class="lbl">Cartones Vendidos</div></div>
+    <div class="summary-card green"><div class="val" id="s-revenue">-</div><div class="lbl">Ingresos</div></div>
+    <div class="summary-card red"><div class="val" id="s-prizes">-</div><div class="lbl">Premios Pagados</div></div>
+    <div class="summary-card"><div class="val" id="s-net">-</div><div class="lbl">Ganancia Neta</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Local</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
+    </thead>
+    <tbody id="locals-table"></tbody>
+  </table>
+</div>
+
+<div id="panel-history" class="panel">
+  <div style="margin-bottom:16px">
+    <button class="btn" onclick="loadHistory()">↻ Cargar Historial</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Fecha</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
+    </thead>
+    <tbody id="history-table"></tbody>
+  </table>
+</div>
+
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['current','history'][i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='history') loadHistory();
+  else loadReport();
+}
+
+async function loadReport(){
+  try{
+    const r=await fetch('/api/sales/current');
+    const d=await r.json();
+    renderReport(d.report, d.game);
+    document.getElementById('report-time').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
+  }catch(e){alert('Error: '+e.message);}
+}
+
+function renderReport(report, game){
+  document.getElementById('s-cards').textContent=report.totals.cards;
+  document.getElementById('s-revenue').textContent='$'+report.totals.revenue.toLocaleString();
+  document.getElementById('s-prizes').textContent='$'+report.totals.prizes.toLocaleString();
+  const net=report.totals.net;
+  const netEl=document.getElementById('s-net');
+  netEl.textContent='$'+net.toLocaleString();
+  netEl.style.color=net>=0?'#44ff88':'#ff4466';
+
+  const tbody=document.getElementById('locals-table');
+  tbody.innerHTML='';
+  Object.entries(report.locals).forEach(([key,local])=>{
+    if(!local.cardsSold&&!local.prizes.length) return;
+    const net2=local.revenue-local.prizes;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><b>${local.name}</b></td>
+      <td>${local.cardsSold}</td>
+      <td style="color:#44ff88">$${local.revenue.toLocaleString()}</td>
+      <td style="color:#ff4466">$${local.prizes.toLocaleString()}</td>
+      <td><span class="badge ${net2>=0?'badge-green':'badge-red'}">$${net2.toLocaleString()}</span></td>`;
+    tr.style.cursor='pointer';
+    tr.onclick=()=>showLocalDetail(key,local);
+    tbody.appendChild(tr);
+  });
+  if(!tbody.children.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#555;padding:16px">Sin ventas aún</td></tr>';
+  }
+}
+
+function showLocalDetail(key, local){
+  const name=local.name;
+  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" onclick="this.remove()">
+  <div style="background:#0d0528;border:1px solid #d4a93a44;border-radius:14px;padding:16px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
+  <div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">📍 ${name}</div>`;
+  
+  html+='<div style="font-size:11px;color:#d4a93a;margin-bottom:6px;letter-spacing:1px">CARTONES VENDIDOS</div>';
+  if(local.salesDetail.length){
+    local.salesDetail.forEach(s=>{
+      const t=new Date(s.soldAt).toLocaleTimeString('es');
+      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
+        <span>${s.playerName}</span><span style="color:#44ff88">$${s.price} · ${t}</span></div>`;
+    });
+  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin ventas</div>';
+  
+  html+='<div style="font-size:11px;color:#d4a93a;margin-top:12px;margin-bottom:6px;letter-spacing:1px">PREMIOS PAGADOS</div>';
+  if(local.prizesDetail.length){
+    local.prizesDetail.forEach(p=>{
+      const t=new Date(p.wonAt).toLocaleTimeString('es');
+      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
+        <span>${p.prize} — ${p.playerName}</span><span style="color:#ff4466">-$${p.amount} · ${t}</span></div>`;
+    });
+  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin premios</div>';
+  
+  html+='<button onclick="this.closest('[style]').remove()" style="margin-top:14px;width:100%;padding:8px;background:#d4a93a;color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-weight:700">Cerrar</button>';
+  html+='</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+async function loadHistory(){
+  try{
+    const r=await fetch('/api/sales/history');
+    const d=await r.json();
+    const tbody=document.getElementById('history-table');
+    tbody.innerHTML='';
+    const allGames=[d.currentGame,...d.history];
+    allGames.forEach((g,i)=>{
+      const rpt=g.report;
+      const date=g.startedAt?new Date(g.startedAt).toLocaleString('es'):'En curso';
+      const net=rpt.totals.net;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i===0?'<span class="badge badge-gold">ACTUAL</span>':('#'+(d.history.length-i+1))}</td>
+        <td style="font-size:10px">${date}</td>
+        <td>${rpt.totals.cards}</td>
+        <td style="color:#44ff88">$${rpt.totals.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${rpt.totals.prizes.toLocaleString()}</td>
+        <td><span class="badge ${net>=0?'badge-green':'badge-red'}">$${net.toLocaleString()}</span></td>`;
+      tbody.appendChild(tr);
+    });
+    if(!tbody.children.length) tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#555;padding:16px">Sin historial</td></tr>';
+  }catch(e){alert('Error: '+e.message);}
+}
+
+// Auto-refresh every 30s
+loadReport();
+setInterval(loadReport, 30000);
+</script>
+</body>
+</html>
