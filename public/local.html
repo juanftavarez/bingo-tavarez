@@ -2,321 +2,993 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Cajero — Bingo Tavarez</title>
+<title>BINGO TAVAREZ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:#060310;color:#fff;font-family:'Cinzel',serif;min-height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
+  min-height:100dvh;display:flex;flex-direction:column}
+/* On TV: no scroll, everything fits */
+@media(min-width:901px){
+  html,body{height:100dvh;max-height:100dvh;overflow:hidden}
+}
+/* On mobile: allow vertical scroll */
+@media(max-width:900px){
+  html,body{overflow-y:auto;height:auto}
+  #cards-wrapper{transform:none!important;width:auto!important;height:auto!important}
+}
 
-/* LOGIN */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
-#login-box h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;text-align:center;margin-bottom:4px}
-#login-box p{font-size:10px;color:#555;text-align:center;margin-bottom:20px;letter-spacing:1px}
-.field{margin-bottom:10px}
-.field label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px}
-.field input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
-.field input:focus{border-color:#d4a93a}
-.btn-gold{width:100%;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
-#login-error{color:#ff4466;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+/* TOP BAR */
+#top-bar{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  padding:5px 12px;background:#0d0528;border-bottom:2px solid #d4a93a44;
+  flex-shrink:0;position:sticky;top:0;z-index:100;gap:8px;
+}
+#top-left{display:flex;flex-direction:column}
+#top-left h1{font-family:'Cinzel Decorative',serif;font-size:16px;
+  background:linear-gradient(180deg,#fff8e0,#ffd700);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+#local-name-display{font-size:9px;color:#d4a93a;letter-spacing:2px;margin-top:1px}
+/* Center: slot machine */
+#top-center{display:flex;align-items:center;justify-content:center;gap:6px}
+/* Right: countdown + prizes + conn */
+#top-right{display:flex;align-items:center;gap:6px}
 
-/* MAIN PANEL */
-#main{display:none;min-height:100vh;flex-direction:column}
-#header{background:linear-gradient(90deg,#0a0220,#1a0640);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4a93a22;position:sticky;top:0;z-index:10}
-#header h2{font-family:'Cinzel Decorative',serif;font-size:13px;color:#d4a93a}
-#logout-btn{background:none;border:1px solid #d4a93a33;border-radius:6px;color:#888;font-size:10px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif}
+/* Countdown in top bar */
+#cd-wrap{display:flex;flex-direction:column;align-items:center;
+  background:#0a0220;border:2px solid #d4a93a55;border-radius:8px;padding:4px 10px}
+#cd-label{font-size:8px;color:#888;letter-spacing:2px;text-transform:uppercase}
+#cd-display{font-family:'Cinzel Decorative',serif;font-size:20px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 10px #ffd70055;line-height:1}
+#cd-display.urgent{color:#ff4444;animation:urgPulse .5s ease-in-out infinite alternate}
+@keyframes urgPulse{from{opacity:.6}to{opacity:1}}
 
-#stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #d4a93a22}
-.stat{padding:10px;text-align:center;border-right:1px solid #d4a93a11}
-.stat:last-child{border-right:none}
-.stat .sv{font-size:20px;color:#ffd700;font-weight:900}
-.stat .sl{font-size:8px;color:#555;letter-spacing:1px;text-transform:uppercase}
+/* Slot machine in top bar */
+#slot-wrap{display:flex;align-items:center;gap:4px}
+#slot-label{font-size:8px;color:#888;letter-spacing:1px;text-transform:uppercase;writing-mode:vertical-lr;transform:rotate(180deg)}
+#slot-machine{display:flex;align-items:center;gap:3px}
+.slot-drum{width:40px;height:50px;background:linear-gradient(180deg,#0a0220,#1a0640,#0a0220);
+  border:1.5px solid #d4a93a;border-radius:7px;overflow:hidden;position:relative;
+  box-shadow:0 0 10px rgba(212,169,58,.3),inset 0 0 8px rgba(0,0,0,.6);transition:border-color .3s,box-shadow .3s}
+.slot-drum::before,.slot-drum::after{content:'';position:absolute;left:0;right:0;height:14px;z-index:2;pointer-events:none}
+.slot-drum::before{top:0;background:linear-gradient(to bottom,#0a0220ee,transparent)}
+.slot-drum::after{bottom:0;background:linear-gradient(to top,#0a0220ee,transparent)}
+.slot-drum .center-line{position:absolute;top:50%;left:0;right:0;height:1.5px;background:#d4a93a88;z-index:3;transform:translateY(-50%);pointer-events:none}
+.slot-reel{display:flex;flex-direction:column;align-items:center;position:absolute;left:0;right:0;top:0;will-change:top}
+.slot-digit{height:50px;line-height:50px;font-family:'Cinzel Decorative',serif;font-size:22px;font-weight:900;color:#ffd700;text-align:center;width:100%;text-shadow:0 0 6px #ffd70066}
+#slot-letter{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;
+  padding:4px 10px;border-radius:7px;border:1.5px solid #555;
+  background:linear-gradient(135deg,#1a0840,#2d1060);min-width:34px;text-align:center;
+  transition:color .3s,border-color .3s,box-shadow .3s}
 
-/* SELL FORM */
-#sell-form{padding:14px;background:#0a0220;border-bottom:1px solid #d4a93a22}
-#sell-form p{font-size:10px;color:#888;margin-bottom:8px;letter-spacing:1px}
-#sell-row{display:flex;gap:6px}
-#sell-num{width:70px;padding:10px;background:#05020f;border:1.5px solid #d4a93a55;border-radius:10px;color:#ffd700;font-family:'Cinzel Decorative',serif;font-size:16px;text-align:center;outline:none;font-weight:900}
-#sell-name{flex:1;padding:10px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:12px;outline:none}
-#sell-name:focus,#sell-num:focus{border-color:#d4a93a}
-#sell-btn{padding:10px 16px;background:linear-gradient(135deg,#003300,#006600);color:#44ff88;border:1px solid #44ff8844;border-radius:10px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
-#sell-btn:active{background:#44ff88;color:#000}
-#sell-msg{font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+#conn-dot{width:7px;height:7px;border-radius:50%;background:#ff4444;transition:background .3s}
+#conn-dot.ok{background:#44ff88}
 
-/* CARD LIST */
-#cards-section{padding:10px 14px;flex:1}
-#cards-section h3{font-size:10px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-#cards-list{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.card-row{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;
-  background:#0a0220;border:1px solid #d4a93a11;border-radius:8px;cursor:pointer;transition:all .15s;min-width:0}
-.card-row.sold{background:#001a00;border-color:#44ff8844}
-.card-num{width:26px;height:26px;border-radius:50%;background:#1a0840;color:#d4a93a;
-  font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
-.card-row.sold .card-num{background:#003300;color:#44ff88}
-.card-name{font-size:9px;color:#fff;font-weight:700;text-align:center;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap;width:100%}
-.card-row.sold .card-name{color:#44ff88}
-.card-status{font-size:8px;color:#555}
-.card-row.sold .card-status{color:#44ff8888}
-.unsell-btn{background:none;border:1px solid #ff444433;border-radius:4px;color:#ff6644;
-  font-size:8px;padding:2px 5px;cursor:pointer;font-family:'Cinzel',serif}
+/* Mobile adjustments */
+@media(max-width:900px){
+  #top-bar{
+    display:flex;flex-wrap:wrap;gap:4px;padding:4px 8px;
+    justify-content:space-between;align-items:center;
+  }
+  #top-left h1{font-size:13px;letter-spacing:1px}
+  #top-left{flex:1;min-width:100px}
+  #local-name-display{font-size:8px}
+  #top-center{order:3;width:100%;justify-content:center;padding:2px 0}
+  #top-right{flex-shrink:0}
+  .slot-drum{width:30px;height:38px}
+  .slot-digit{height:38px;line-height:38px;font-size:16px}
+  #slot-letter{font-size:12px;padding:2px 7px;min-width:26px}
+  #cd-display{font-size:15px}
+  #cd-label{font-size:7px}
+  .prize-item{padding:1px 3px;font-size:8px;gap:1px}
+  .pi-icon{font-size:9px}
+  #main{padding:3px 5px 2px}
+  .bingo-card{padding:3px 2px;border-radius:7px;gap:1px}
+  .cell{font-size:11px}
+  .card-header{gap:1px}
+  .card-header span{font-size:8px}
+  .card-name-wrap{gap:3px;margin-bottom:1px}
+  .card-name-wrap input{font-size:8px;padding:1px 3px}
+  .card-num-badge{width:14px;height:14px;font-size:7px;border-width:1px}
+  .card-grid{gap:1px}
+  #ticker-bar{padding:2px 6px}
+  .ticker-item{font-size:9px;padding:0 8px}
+  #cards-grid{gap:4px}
+}
+
+/* MAIN */
+#main{padding:6px 10px 4px;display:flex;flex-direction:column;gap:4px;flex:1}
+#subtitle{font-size:8px;color:#d4a93a55;letter-spacing:3px;text-align:center;text-transform:uppercase;line-height:1}
+#status-msg{font-size:10px;color:#888;text-align:center;font-style:italic;letter-spacing:1px;min-height:14px;line-height:1.2}
+
+/* Cards */
+#cards-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#cards-wrapper{transform-origin:top left;transition:transform .2s ease;overflow:visible}
+
+.bingo-card{background:linear-gradient(160deg,#ffffff,#f0f4ff);border:1.5px solid #aabbdd;
+  border-radius:9px;padding:4px 4px 5px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 2px 6px rgba(0,0,80,.1)}
+.card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px;flex-wrap:wrap}
+.sold-overlay{position:absolute;inset:0;background:rgba(0,40,0,.85);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:2}
+.sold-overlay .sold-badge{font-family:'Cinzel Decorative',serif;font-size:13px;color:#44ff88;
+  font-weight:900;letter-spacing:2px;text-align:center}
+.sold-overlay .sold-player{font-size:11px;color:#aaffaa;margin-top:4px;text-align:center;
+  max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
+  font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:900;
+  width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1px solid #4466cc}
+.card-name-wrap input{width:100%;background:#f8faff;border:1px solid #aabbddaa;border-radius:5px;
+  color:#1a2a5a;font-family:'Cinzel',serif;font-size:9px;font-weight:700;
+  padding:2px 4px;outline:none;text-align:center}
+.card-header{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:1px}
+.card-header span{text-align:center;font-size:9px;font-weight:900;padding:1px 0;border-radius:3px;font-family:'Cinzel Decorative',serif}
+.ltr-B{color:#dd1144;background:#ff446622}.ltr-I{color:#cc8800;background:#ffaa0022}
+.ltr-N{color:#0099bb;background:#44ddff22}.ltr-G{color:#00aa44;background:#44ff8822}
+.ltr-O{color:#9900cc;background:#dd44ff22}
+.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:5px;
+  font-size:13px;font-weight:800;background:#eef2ff;border:1px solid #c0cce8;
+  color:#1a2a5a;position:relative;user-select:none}
+.cell.free{background:radial-gradient(circle,#3377ff,#0a44cc);color:#fff;font-size:6px;font-weight:900;border-color:#5599ff}
+.cell.marked{background:radial-gradient(circle,#cc1a00,#8b0000)!important;color:#ffd700!important;
+  border-color:#ff4400!important;box-shadow:0 0 8px rgba(255,60,0,.7)!important;transform:scale(.94);font-weight:900;font-size:15px!important}
+.cell.marked.free{background:radial-gradient(circle,#2266ff,#0a3399)!important;color:#fff!important;border-color:#4488ff!important}
+.cell.win-line{background:radial-gradient(circle,#00ffcc,#00aa88)!important;color:#000!important;
+  border-color:#00ffcc!important;box-shadow:0 0 14px rgba(0,255,200,.9)!important;font-weight:900!important;
+  animation:lineGlow 1s ease-in-out infinite alternate!important}
+.cell.win-full{background:radial-gradient(circle,#ffd700,#cc8800)!important;color:#000!important;
+  border-color:#ffd700!important;box-shadow:0 0 12px rgba(255,215,0,.95)!important;font-weight:900!important;
+  animation:fullGlow .8s ease-in-out infinite alternate!important}
+@keyframes lineGlow{from{box-shadow:0 0 6px rgba(0,255,200,.7)}to{box-shadow:0 0 20px rgba(0,255,200,1),0 0 5px #fff}}
+@keyframes fullGlow{from{box-shadow:0 0 6px rgba(255,215,0,.7)}to{box-shadow:0 0 20px rgba(255,215,0,1),0 0 5px #fff8}}
+.bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 24px rgba(255,215,0,.8)}
+@keyframes winFlash{0%,100%{background:linear-gradient(160deg,#fff,#f0f4ff)}50%{background:linear-gradient(160deg,#fff8d0,#ffeea0)}}
+
+/* Ticker bar — prizes from other locals */
+#ticker-bar{
+  background:linear-gradient(135deg,#0a0220cc,#1a0640cc);
+  border:1px solid #d4a93a44; border-radius:8px;
+  padding:4px 10px; overflow:hidden; flex-shrink:0;
+  display:none; position:relative;
+}
+#ticker-bar.show{display:block}
+#ticker-inner{
+  display:flex; align-items:center; gap:0;
+  white-space:nowrap;
+  animation:tickerScroll 20s linear infinite;
+}
+#ticker-inner:empty{animation:none}
+.ticker-item{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:0 18px; font-size:11px; color:#d4a93a;
+  font-family:'Cinzel',serif; letter-spacing:1px;
+}
+.ticker-item .ti-icon{font-size:13px}
+.ticker-item .ti-local{color:#fff;font-weight:700}
+.ticker-item .ti-prize{color:#ffd700;font-weight:900}
+.ticker-sep{color:#d4a93a44;padding:0 4px}
+@keyframes tickerScroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+
+/* Waiting */
+#waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:16px;text-align:center}
+#waiting h2{font-family:'Cinzel Decorative',serif;font-size:26px;color:#ffd700;
+  text-shadow:0 0 18px #ffd70066;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* Buena Suerte overlay */
+#buena-suerte-ov{position:fixed;inset:0;background:#000c;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  z-index:2000;opacity:0;pointer-events:none;transition:opacity .5s}
+#buena-suerte-ov.show{opacity:1}
+#bs-text{font-family:'Cinzel Decorative',serif;font-size:72px;font-weight:900;text-align:center;
+  background:linear-gradient(135deg,#fff8e0,#ffd700,#ff8c00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 30px rgba(255,200,0,0.8));
+  animation:bsZoom .6s cubic-bezier(.175,.885,.32,1.275) forwards;line-height:1.1}
+#bs-local{font-family:'Cinzel',serif;font-size:28px;color:#fff;margin-top:10px;
+  text-shadow:0 0 16px #ffd70066;letter-spacing:3px}
+@keyframes bsZoom{0%{transform:scale(0) rotate(-5deg)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+/* X2 lucky cell */
+/* X2 — badge inside the cell, no color change */
+.cell.x2-lucky{
+  position:relative !important;
+}
+.cell.x2-lucky::after{
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
+  font-family:'Cinzel Decorative',serif;
+  box-shadow:0 0 5px #ffd70088; z-index:5;
+  pointer-events:none;
+}
+/* Keep ×2 badge when marked */
+.cell.x2-marked{
+  position:relative !important;
+}
+.cell.x2-marked::after{
+  content:'×2';
+  position:absolute; top:1px; right:1px;
+  background:#ffd700; color:#000; font-size:9px; font-weight:900;
+  border-radius:3px; padding:0px 3px; line-height:14px;
+  font-family:'Cinzel Decorative',serif;
+  box-shadow:0 0 6px #ffd700cc; z-index:5;
+  pointer-events:none;
+}
+
+/* Prize panel — small horizontal strip in top-right */
+#prize-panel{display:flex;align-items:center;gap:3px}
+.prize-item{display:flex;align-items:center;gap:2px;padding:2px 5px;
+  border-radius:5px;border:1px solid;font-size:9px;white-space:nowrap;transition:opacity .3s}
+.prize-item .pi-icon{font-size:10px}
+.prize-item .pi-val{color:inherit;font-weight:700}
+.prize-item.won{opacity:.25;text-decoration:line-through}
+
+/* Winner overlay */
+#winner-ov{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s}
+#winner-ov.show{opacity:1;pointer-events:all}
+#winner-box{background:radial-gradient(circle at 40% 30%,#2d1060,#0a0510);border:5px solid #ffd700;
+  border-radius:28px;padding:50px 80px;text-align:center;
+  transform:scale(.5);transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+  font-family:'Cinzel Decorative',serif;box-shadow:0 0 80px rgba(255,215,0,.4)}
+#winner-ov.show #winner-box{transform:scale(1)}
+#w-icon{font-size:70px;margin-bottom:10px}
+#w-title{font-size:28px;color:#d4a93a;margin-bottom:6px}
+#w-name{font-size:36px;color:#ffd700;margin-bottom:10px;text-shadow:0 0 20px #ffd70099}
+#w-prize{font-size:90px;font-weight:900;color:#ffd700;line-height:1;text-shadow:0 0 30px #ffd70099}
+#w-sub{font-size:18px;color:#aaa;margin-top:10px}
+#w-close{margin-top:24px;padding:14px 48px;font-family:'Cinzel',serif;font-size:17px;font-weight:700;
+  background:linear-gradient(135deg,#d4a93a,#ffd700);color:#0a0510;border:none;border-radius:12px;cursor:pointer}
+#fwc{position:fixed;inset:0;pointer-events:none;z-index:999}
 </style>
 </head>
 <body>
+<canvas id="fwc"></canvas>
 
-<div id="login-screen">
-  <div id="login-box">
+<!-- Buena Suerte overlay -->
+<div id="buena-suerte-ov">
+  <div id="bs-text">✦ ¡BUENA SUERTE! ✦</div>
+  <div id="bs-local"></div>
+</div>
+
+<div id="top-bar">
+  <!-- LEFT: title + local name -->
+  <div id="top-left">
     <h1>✦ BINGO TAVAREZ ✦</h1>
-    <p>PANEL DEL CAJERO</p>
-    <div class="field"><label>USUARIO</label><input type="text" id="lu" placeholder="local1" autocomplete="off" autocapitalize="off"></div>
-    <div class="field"><label>CONTRASEÑA</label><input type="password" id="lp" placeholder="••••••"></div>
-    <button class="btn-gold" onclick="doLogin()">ENTRAR</button>
-    <div id="login-error"></div>
+    <div id="local-name-display">Conectando...</div>
+  </div>
+
+  <!-- CENTER: slot machine bolillero -->
+  <div id="top-center">
+    <div style="font-size:8px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-right:2px">Último</div>
+    <div id="slot-machine">
+      <div id="slot-letter" style="color:#555;border-color:#444">?</div>
+      <div class="slot-drum" id="drum-tens"><div class="slot-reel" id="reel-tens"></div><div class="center-line"></div></div>
+      <div class="slot-drum" id="drum-units"><div class="slot-reel" id="reel-units"></div><div class="center-line"></div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: countdown + prizes + dot -->
+  <div id="top-right">
+    <div id="cd-wrap">
+      <div id="cd-label">Próxima</div>
+      <div id="cd-display">--:--</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
+      <div id="prize-panel">
+        <div class="prize-item" id="pp-COSITA"  style="color:#ff9944;border-color:#ff994455"><span class="pi-icon">🎯</span><span class="pi-val">Cosita $50</span></div>
+        <div class="prize-item" id="pp-MEDIO"   style="color:#ff44aa;border-color:#ff44aa55"><span class="pi-icon">〰️</span><span class="pi-val">Medio $50</span></div>
+        <div class="prize-item" id="pp-L"       style="color:#44ff88;border-color:#44ff8855"><span class="pi-icon">𝕃</span><span class="pi-val">L $50</span></div>
+        <div class="prize-item" id="pp-T"       style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">𝕋</span><span class="pi-val">T $50</span></div>
+        <div class="prize-item" id="pp-line"    style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">⭐</span><span class="pi-val">Bingo $150</span></div>
+        <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">Full $500</span></div>
+      </div>
+    </div>
+    <div id="conn-dot"></div>
   </div>
 </div>
 
-<div id="main">
-  <div id="header">
-    <h2 id="local-title">Local</h2>
-    <button id="logout-btn" onclick="logout()">Salir</button>
+<div id="main" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+  <div id="subtitle">by Lotronica</div>
+  <div id="status-msg">⏳ Esperando conexión...</div>
+
+  <!-- Ticker bar: prizes from other locals -->
+  <div id="ticker-bar">
+    <div id="ticker-inner"></div>
   </div>
 
-  <div id="stats">
-    <div class="stat"><div class="sv" id="st-sold">0</div><div class="sl">Vendidos</div></div>
-    <div class="stat"><div class="sv" id="st-avail">0</div><div class="sl">Disponibles</div></div>
-    <div class="stat"><div class="sv" id="st-income">$0</div><div class="sl">Ingresos</div></div>
-  </div>
+  <div id="cards-wrapper"><div id="cards-grid"></div></div>
+</div>
 
-  <!-- Lock banner -->
-  <div id="lock-banner" style="display:none;background:#330000;border-bottom:1px solid #ff444433;
-    padding:10px 14px;align-items:center;justify-content:center;gap:8px">
-    <span style="font-size:20px">🔒</span>
-    <div style="text-align:center">
-      <div style="font-size:12px;color:#ff6644;font-weight:700;font-family:'Cinzel Decorative',serif">PANEL BLOQUEADO</div>
-      <div style="font-size:10px;color:#ff9944">Esperando nueva partida...</div>
-    </div>
+<!-- No cards sold screen -->
+<div id="no-cards-ov" style="display:none;position:fixed;inset:0;background:#0a0510;
+  z-index:5000;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Cinzel Decorative',serif;text-align:center;gap:24px">
+  <div style="font-size:60px">🚫</div>
+  <div style="font-size:32px;color:#ffd700;text-shadow:0 0 20px #ffd70066;
+    line-height:1.3" id="no-cards-title">No se vendieron cartones<br>en esta jugada</div>
+  <div id="no-cards-local" style="font-size:18px;color:#d4a93a;letter-spacing:3px"></div>
+  <div style="font-size:14px;color:#666;letter-spacing:2px;margin-top:10px">
+    La partida continúa en los demás locales
   </div>
+</div>
 
-  <div id="sell-form">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <p style="margin:0">VENDER CARTÓN</p>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:9px;color:#888">Cierra en:</span>
-        <span id="cajero-timer" style="font-size:13px;font-weight:900;color:#44ff88;font-family:'Cinzel Decorative',serif">9:00</span>
-      </div>
-    </div>
-    <div id="sell-row">
-      <input type="number" id="sell-num" placeholder="Nº" min="1" max="21">
-      <input type="text" id="sell-name" placeholder="Nombre del jugador..." maxlength="30">
-      <button id="sell-btn" onclick="sellCard()">✅ VENDER</button>
-    </div>
-    <div id="sell-msg"></div>
-  </div>
-
-  <div id="cards-section">
-    <h3>Cartones (<span id="sold-count">0</span>/21)</h3>
-    <div id="cards-list"></div>
+<div id="winner-ov">
+  <div id="winner-box">
+    <div id="w-icon">🏆</div>
+    <div id="w-title"></div>
+    <div id="w-name"></div>
+    <div id="w-prize"></div>
+    <div id="w-sub"></div>
+    <button id="w-close" onclick="closeWinner()">Continuar</button>
   </div>
 </div>
 
 <script>
-let token = localStorage.getItem('cajero_token');
-let localId = 0;
-let soldCards = {};
-let cajeroLocked = false;
-let cajeroTimer = null;
-let cajeroSecsLeft = 0;
-let ws = null;
+const pathParts=window.location.pathname.split('/');
+const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 
-if(token){ showMain(); loadSales(); connectWS(); }
+const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
+const PRIZES_INFO={
+  COSITA:  {icon:'🎯',color:'#ff9944',msg:'¡LA COSITA!',prizeLabel:'la Cosita',     prize:'$50 pesos', amount:50},
+  MEDIO:   {icon:'〰️',color:'#ff44aa',msg:'¡EL MEDIO!', prizeLabel:'el Medio',      prize:'$50 pesos', amount:50},
+  L:       {icon:'𝕃', color:'#44ff88',msg:'¡LA L!',    prizeLabel:'la L',          prize:'$50 pesos', amount:50},
+  T:       {icon:'𝕋', color:'#ee88ff',msg:'¡LA T!',    prizeLabel:'la T',          prize:'$50 pesos', amount:50},
+  X:       {icon:'✖️', color:'#ff88aa',msg:'¡LA X!',    prizeLabel:'la X',          prize:'$50 pesos', amount:50},
+  CRUZ:    {icon:'✚', color:'#88ffff',msg:'¡LA CRUZ!', prizeLabel:'la Cruz',       prize:'$50 pesos', amount:50},
+  line:    {icon:'⭐',color:'#00ffcc',msg:'¡EL BINGO!', prizeLabel:'el Bingo',     prize:'$150 pesos',amount:150},
+  fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prizeLabel:'Cartón Lleno', prize:'$500 pesos',amount:500},
+};
+const PATTERNS={
+  L:[[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]],
+  T:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,2],[2,2],[3,2],[4,2]],
+  X:[[1,1],[1,3],[3,1],[3,3]],
+  CRUZ:[[1,2],[2,1],[2,3],[3,2]],
+};
 
-function connectWS(){
-  if(!token) return;
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => console.log('WS connected');
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if(msg.type === 'cajero_open'){
-      unlockCajero(msg.secondsToClose);
-    } else if(msg.type === 'cajero_close'){
-      lockCajero();
-    } else if(msg.type === 'card_sold_confirm'){
-      // another session sold a card
-    } else if(msg.type === 'sales_report_auto'){
-      showSalesReport(msg.report);
+let cardsData=[], drawnNums=new Set();
+let prizes={COSITA:false,MEDIO:false,L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+const highlightedLines=new Set();
+let slotRolling=false;
+let countdownTotal=900;
+
+// Countdown
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function updateCD(s){
+  const el=document.getElementById('cd-display');
+  el.textContent=fmtTime(s);el.className=s<=60?'urgent':'';
+}
+
+// WebSocket
+const wsUrl=location.protocol==='https:'?`wss://${location.host}`:`ws://${location.host}`;
+let ws;
+function connect(){
+  ws=new WebSocket(wsUrl);
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({type:'join_local',localId:LOCAL_ID}));
+    document.getElementById('conn-dot').classList.add('ok');
+    setStatus('Conectado ✓');
+  };
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    switch(msg.type){
+      case 'state':
+        if(msg.localName && !localNameManuallySet){
+          localName = msg.localName;
+          setLocalName(localName);
+        }
+        if(msg.state&&msg.state.localNames) allLocalNames=msg.state.localNames;
+        if(msg.isDisabled){
+          document.getElementById('no-cards-local').textContent = localName || `Local ${LOCAL_ID}`;
+          document.getElementById('no-cards-ov').style.display = 'flex';
+          gameOver = true;
+        } else if(msg.cards&&msg.cards.length){
+          loadCards(msg.cards);
+          if(msg.state&&msg.state.drawnNumbers)msg.state.drawnNumbers.forEach(n=>markNumber(n,false));
+        }
+        if(msg.prizes)restorePrizes(msg.prizes);
+        if(msg.countdownActive&&msg.countdown)updateCD(msg.countdown);
+        break;
+      case 'new_game':
+        gameOver=false;
+        lastDrawnBall=null;
+        tickerItems.length=0;
+        document.getElementById('ticker-bar').classList.remove('show');
+        loadCards(msg.cards);
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        highlightedLines.clear();
+        x2Number = pickX2Number(msg.cards);
+        resetPrizePanel();resetSlot();updateCD(600);
+        setStatus('¡Nueva partida! 🎉');
+        // Only update name if explicitly provided AND hasn't been manually changed
+        if(msg.localName && !localNameManuallySet) {
+          localName = msg.localName;
+          setLocalName(localName);
+        }
+        setTimeout(() => { showBuenaSuerte(localName); }, 300);
+        setTimeout(() => applyX2Cells(), 400);
+        break;
+      case 'draw':
+        drawnNums.add(msg.n);
+        lastDrawnBall = msg.n;  // track which ball just came out
+        updateLastBall(msg.n,getCol(msg.n));
+        setTimeout(()=>markNumber(msg.n,true),2300);break;
+      case 'prize_won':
+        if(msg.localId === LOCAL_ID) {
+          prizes[msg.prize] = true;
+          markPrizePanelWon(msg.prize);
+          showWinner(msg);
+        } else {
+          addTickerItem(msg);
+        }
+        break;
+      case 'card_sold_confirm':
+        if(msg.localId === LOCAL_ID){
+          // Update name input on the card
+          const inp = document.getElementById(`name-${msg.cardIdx}`);
+          if(inp) inp.value = msg.playerName;
+          const btn = document.getElementById(`sold-btn-${msg.cardIdx}`);
+          if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';}
+          const cardEl = document.getElementById(`card-${msg.cardIdx}`);
+          if(cardEl) cardEl.style.outline='2px solid #44ff8866';
+        }
+        break;
+      case 'card_unsold_confirm':
+        if(msg.localId === LOCAL_ID){
+          const inp2 = document.getElementById(`name-${msg.cardIdx}`);
+          if(inp2) inp2.value = '';
+          const btn2 = document.getElementById(`sold-btn-${msg.cardIdx}`);
+          if(btn2){btn2.textContent='VENDER';btn2.style.background='#1a0840';btn2.style.color='#aaa';}
+          const cardEl2 = document.getElementById(`card-${msg.cardIdx}`);
+          if(cardEl2) cardEl2.style.outline='';
+        }
+        break;
+      case 'name_update':
+        localName = msg.name;
+        localNameManuallySet = true; // host explicitly set this name
+        setLocalName(msg.name);
+        break;
+      case 'locals_update':
+        if(msg.names) allLocalNames = msg.names;
+        break;
+      case 'countdown': updateCD(msg.seconds);break;
+      case 'countdown_stopped': document.getElementById('cd-display').textContent='--:--';break;
+      case 'disabled':
+        // This local was disabled by host — show no-cards screen
+        document.getElementById('no-cards-local').textContent = localName || `Local ${LOCAL_ID}`;
+        document.getElementById('no-cards-ov').style.display = 'flex';
+        gameOver = true; // stop all game logic
+        break;
+      case 'enabled':
+        document.getElementById('no-cards-ov').style.display = 'none';
+        gameOver = false;
+        break;
+      case 'reset':
+        gameOver=false;
+        x2Number=null;
+        loadCards(msg.cards);
+        drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
+        highlightedLines.clear();resetPrizePanel();resetSlot();
+        setStatus('Partida reseteada');break;
     }
   };
-  ws.onclose = () => setTimeout(connectWS, 3000);
+  ws.onclose=()=>{document.getElementById('conn-dot').classList.remove('ok');setStatus('Desconectado...');setTimeout(connect,2000);};
 }
+connect();
 
-function unlockCajero(secsToClose){
-  cajeroLocked = false;
-  cajeroSecsLeft = secsToClose || 540;
-  updateLockUI();
-  clearInterval(cajeroTimer);
-  cajeroTimer = setInterval(()=>{
-    cajeroSecsLeft--;
-    updateTimerUI();
-    if(cajeroSecsLeft <= 0){ clearInterval(cajeroTimer); lockCajero(); }
-  }, 1000);
+function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+function setLocalName(name){
+  document.getElementById('local-name-display').textContent=name;
+  document.title=`${name} - Bingo Tavarez`;
 }
+function getCol(n){if(n<=15)return 'B';if(n<=30)return 'I';if(n<=45)return 'N';if(n<=60)return 'G';return 'O';}
 
-function lockCajero(){
-  cajeroLocked = true;
-  clearInterval(cajeroTimer);
-  updateLockUI();
-}
-
-function updateLockUI(){
-  const form = document.getElementById('sell-form');
-  const lockBanner = document.getElementById('lock-banner');
-  if(cajeroLocked){
-    form.style.opacity = '0.4';
-    form.style.pointerEvents = 'none';
-    if(lockBanner) lockBanner.style.display = 'flex';
-  } else {
-    form.style.opacity = '1';
-    form.style.pointerEvents = 'auto';
-    if(lockBanner) lockBanner.style.display = 'none';
+// Load cards
+function loadCards(cards){
+  cardsData=cards;
+  const grid=document.getElementById('cards-grid');
+  grid.style.display='grid';grid.innerHTML='';
+  // Columns based on screen width + card count
+  function getGridCols(count) {
+    const w = window.innerWidth;
+    if (w <= 480) {
+      // Phone portrait: 3 cols for 21 cards (3×7), 3 for 15 (3×5)
+      return 3;
+    } else if (w <= 900) {
+      // Tablet / phone landscape: 5 cols
+      return count === 21 ? 5 : 4;
+    } else {
+      // TV / desktop: 7 for 21, 5 for 15
+      return count === 21 ? 7 : 5;
+    }
   }
+  const cols = getGridCols(cards.length);
+  grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  cards.forEach((card,ci)=>{
+    const cardEl=document.createElement('div');
+    cardEl.className='bingo-card';cardEl.id=`card-${ci}`;
+    const nw=document.createElement('div');nw.className='card-name-wrap';
+    const badge=document.createElement('div');badge.className='card-num-badge';
+    badge.textContent=ci+1; // always 1-15
+    const inp=document.createElement('input');inp.type='text';
+    inp.placeholder=`Jugador ${ci+1}`;inp.id=`name-${ci}`;inp.maxLength=20;
+    // VENDIDO button
+    const soldBtn=document.createElement('button');
+    soldBtn.id=`sold-btn-${ci}`;
+    soldBtn.textContent='VENDER';
+    soldBtn.style.cssText='padding:2px 6px;font-size:8px;border-radius:4px;cursor:pointer;'
+      +'background:#1a0840;color:#aaa;border:1px solid #d4a93a44;font-family:"Cinzel",serif;'
+      +'font-weight:700;letter-spacing:1px;white-space:nowrap;transition:all .2s';
+    soldBtn.onclick=()=>toggleSold(ci);
+    nw.appendChild(badge);nw.appendChild(inp);nw.appendChild(soldBtn);cardEl.appendChild(nw);
+    const hdr=document.createElement('div');hdr.className='card-header';
+    ['B','I','N','G','O'].forEach(l=>{const s=document.createElement('span');s.className=`ltr-${l}`;s.textContent=l;hdr.appendChild(s);});
+    cardEl.appendChild(hdr);
+    const cg=document.createElement('div');cg.className='card-grid';
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const cell=document.createElement('div');cell.className='cell';cell.id=`cell-${ci}-${r}-${c}`;
+      if(r===2&&c===2){cell.classList.add('free','marked');cell.textContent='FREE';}
+      else{cell.textContent=card[r][c];cell.dataset.num=card[r][c];}
+      cg.appendChild(cell);
+    }
+    cardEl.appendChild(cg);grid.appendChild(cardEl);
+  });
+  setStatus(`${cards.length} cartones listos 🍀`);
+  setTimeout(autoFit, 100); // fit all cards in screen after render
 }
 
-function updateTimerUI(){
-  const el = document.getElementById('cajero-timer');
-  if(!el) return;
-  const m = Math.floor(cajeroSecsLeft/60);
-  const s = cajeroSecsLeft % 60;
-  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  el.style.color = cajeroSecsLeft <= 60 ? '#ff4466' : cajeroSecsLeft <= 120 ? '#ffaa00' : '#44ff88';
+function autoFit() {
+  const wrapper = document.getElementById('cards-wrapper');
+  const grid    = document.getElementById('cards-grid');
+  if (!wrapper || !grid || grid.style.display === 'none') return;
+
+  // Step 1: Remove any existing transform so grid renders at natural size
+  wrapper.style.cssText = 'transform:none;width:auto;height:auto;overflow:visible';
+
+  // Step 2: Measure after a tiny delay so browser finishes layout
+  setTimeout(() => {
+    const gridNatW = grid.offsetWidth;
+    const gridNatH = grid.offsetHeight;
+    if (!gridNatW || !gridNatH) return;
+
+    // Step 3: Measure EXACT occupied space above the cards
+    const topBar   = document.getElementById('top-bar');
+    const subtitle = document.getElementById('subtitle');
+    const status   = document.getElementById('status-msg');
+    const ticker   = document.getElementById('ticker-bar');
+    const mainEl   = document.getElementById('main');
+
+    let usedH = 0;
+    if (topBar)   usedH += topBar.offsetHeight;
+    if (subtitle) usedH += subtitle.offsetHeight + 4;
+    if (status)   usedH += status.offsetHeight + 4;
+    if (ticker)   usedH += ticker.offsetHeight + 4;
+
+    // Main padding
+    const mst = mainEl ? window.getComputedStyle(mainEl) : null;
+    if (mst) usedH += parseFloat(mst.paddingTop||0) + parseFloat(mst.paddingBottom||0);
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const availW = vw - 8;
+    const availH = vh - usedH - 8;
+
+    if (availW <= 0 || availH <= 0) return;
+
+    const scaleW = availW / gridNatW;
+    const scaleH = availH / gridNatH;
+    const scale  = Math.min(scaleW, scaleH); // fill as much as possible
+
+    wrapper.style.cssText = [
+      'transform-origin:top left',
+      `transform:scale(${scale})`,
+      `width:${Math.round(gridNatW * scale)}px`,
+      `height:${Math.round(gridNatH * scale)}px`,
+      'overflow:visible',
+    ].join(';');
+  }, 30);
 }
 
-function showSalesReport(report){
-  const el = document.getElementById('sell-msg');
-  if(!el) return;
-  const myKey = `local_${localId}`;
-  const local = report.locals[myKey];
-  if(local){
-    el.style.color = '#ffd700';
-    el.textContent = `✅ Partida cerrada: ${local.cardsSold} cartones · $${local.revenue} pesos`;
-    setTimeout(()=>el.textContent='', 8000);
-  }
-}
-
-async function doLogin(){
-  const user = document.getElementById('lu').value.trim().toLowerCase();
-  const pass = document.getElementById('lp').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  try{
-    const r = await fetch('/api/cajero/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
-    const d = await r.json();
-    if(!r.ok){errEl.textContent = d.error; return;}
-    token = d.token; localId = d.localId;
-    localStorage.setItem('cajero_token', token);
-    document.getElementById('local-title').textContent = '✦ ' + d.name;
-    showMain();
-    loadSales();
-    connectWS();
-  }catch(e){errEl.textContent = 'Error de conexión';}
-}
-
-function showMain(){
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('main').style.display = 'flex';
-}
-
-function logout(){
-  localStorage.removeItem('cajero_token');
-  token = null; soldCards = {};
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('main').style.display = 'none';
-}
-
-async function loadSales(){
-  try{
-    const r = await fetch('/api/cajero/cards',{headers:{Authorization:'Bearer '+token}});
-    if(r.status===401){logout();return;}
-    const d = await r.json();
-    localId = d.localId;
-    document.getElementById('local-title').textContent = '✦ ' + (d.localName||`Local ${localId}`);
-    soldCards = {};
-    d.cards.forEach(c=>{ if(c.sold) soldCards[c.idx] = c.playerName; });
-    renderList();
-  }catch(e){console.error(e);}
-}
-
-async function sellCard(){
-  const numEl = document.getElementById('sell-num');
-  const nameEl = document.getElementById('sell-name');
-  const msgEl = document.getElementById('sell-msg');
-  const num = parseInt(numEl.value);
-  const name = nameEl.value.trim();
-  msgEl.textContent = '';
-
-  if(!num || num < 1 || num > 21){msgEl.style.color='#ff6644';msgEl.textContent='Número de cartón inválido (1-21)';return;}
-  if(!name){msgEl.style.color='#ff6644';msgEl.textContent='Escribe el nombre del jugador';return;}
-
-  const idx = num - 1;
-  if(soldCards[idx] !== undefined){msgEl.style.color='#ff6644';msgEl.textContent=`Cartón ${num} ya fue vendido a ${soldCards[idx]}`;return;}
-
-  try{
-    const r = await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,playerName:name,action:'sell'})});
-    if(!r.ok){msgEl.style.color='#ff6644';msgEl.textContent='Error al vender';return;}
-    soldCards[idx] = name;
-    renderList();
-    msgEl.style.color='#44ff88';
-    msgEl.textContent=`✅ Cartón ${num} vendido a ${name}`;
-    numEl.value=''; nameEl.value='';
-    numEl.focus();
-    setTimeout(()=>msgEl.textContent='',3000);
-  }catch(e){msgEl.style.color='#ff6644';msgEl.textContent='Error de conexión';}
-}
-
-async function unsellCard(idx){
-  if(!confirm(`¿Cancelar venta del Cartón ${idx+1}?`)) return;
-  try{
-    await fetch('/api/cajero/sell',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({cardIdx:idx,action:'unsell'})});
-    delete soldCards[idx];
-    renderList();
-  }catch(e){console.error(e);}
-}
-
-function renderList(){
-  const list = document.getElementById('cards-list');
-  const soldCount = Object.keys(soldCards).length;
-  document.getElementById('st-sold').textContent = soldCount;
-  document.getElementById('st-avail').textContent = 21 - soldCount;
-  document.getElementById('st-income').textContent = '$'+(soldCount*50).toLocaleString();
-  document.getElementById('sold-count').textContent = soldCount;
-
-  list.innerHTML = '';
-  for(let i=0; i<21; i++){
-    const sold = soldCards[i] !== undefined;
-    const div = document.createElement('div');
-    div.className = 'card-row' + (sold?' sold':'');
-    div.innerHTML = `<div class="card-num">${i+1}</div>
-      <div class="card-name">${sold ? soldCards[i] : ''}</div>
-      <div class="card-status">${sold ? '✅' : '·'}</div>
-      ${sold ? `<button class="unsell-btn" onclick="unsellCard(${i});event.stopPropagation()">✕</button>` : ''}`;
-    if(!sold) div.onclick = () => {
-      document.getElementById('sell-num').value = i+1;
-      document.getElementById('sell-name').focus();
-    };
-    list.appendChild(div);
-  }
-}
-
-document.addEventListener('keydown', e=>{
-  if(e.key==='Enter'){
-    if(document.getElementById('login-screen').style.display!=='none') doLogin();
-    else sellCard();
-  }
+window.addEventListener('resize', () => {
+  clearTimeout(window._fitTimer);
+  window._fitTimer = setTimeout(() => {
+    // Re-apply grid columns for new screen size
+    const grid = document.getElementById('cards-grid');
+    if (grid && grid.style.display !== 'none' && cardsData.length) {
+      function getGridCols2(count) {
+        const w = window.innerWidth;
+        if (w <= 480) return 3;
+        if (w <= 900) return count === 21 ? 5 : 4;
+        return count === 21 ? 7 : 5;
+      }
+      grid.style.gridTemplateColumns = `repeat(${getGridCols2(cardsData.length)},1fr)`;
+    }
+    autoFit();
+  }, 80);
 });
 
-// Auto refresh every 60s
-setInterval(loadSales, 60000);
+// Stop all marking once fullCard is won in this local
+let gameOver       = false;
+let lastDrawnBall  = null;  // the ball that just triggered a win check
+let allLocalNames = {}; // updated from server
+const tickerItems = []; // prize history for ticker
+
+const PRIZES_INFO_TICKER = {
+  COSITA:  {icon:'🎯', label:'La Cosita',   prize:'$50 pesos'},
+  MEDIO:   {icon:'〰️', label:'El Medio',    prize:'$50 pesos'},
+  L:       {icon:'🏅', label:'Figura L',    prize:'$50 pesos'},
+  T:       {icon:'🏅', label:'Figura T',    prize:'$50 pesos'},
+  X:       {icon:'🏅', label:'Figura X',    prize:'$50 pesos'},
+  CRUZ:    {icon:'✝️',  label:'La Cruz',     prize:'$50 pesos'},
+  line:    {icon:'🏆', label:'¡BINGO!',      prize:'$150 pesos'},
+  fullCard:{icon:'🌟', label:'Cartón Lleno', prize:'$500 pesos'},
+};
+
+function addTickerItem(msg) {
+  const info   = PRIZES_INFO_TICKER[msg.prize] || PRIZES_INFO_TICKER.line;
+  const lname  = allLocalNames[`local_${msg.localId}`] || `Local ${msg.localId}`;
+  const player = msg.playerName || `Cartón ${msg.cardIdx+1}`;
+  const x2txt  = msg.x2 ? ' ×2' : '';
+  tickerItems.push(`${info.icon} <b style="color:#fff">${lname}</b> — ${player} ganó <b style="color:#ffd700">${info.prize}${x2txt}</b> (${info.label})`);
+  renderTicker();
+}
+
+function renderTicker() {
+  if (!tickerItems.length) return;
+  const bar   = document.getElementById('ticker-bar');
+  const inner = document.getElementById('ticker-inner');
+  bar.classList.add('show');
+  // Duplicate items for seamless loop
+  const html = [...tickerItems, ...tickerItems].map(t =>
+    `<span class="ticker-item">${t}</span><span class="ticker-sep">✦</span>`
+  ).join('');
+  inner.innerHTML = html;
+  // Adjust animation speed based on content length
+  const totalW = inner.scrollWidth / 2;
+  const speed  = Math.max(15, totalW / 60); // px per second roughly
+  inner.style.animationDuration = speed + 's';
+  autoFit(); // refit after ticker shows
+}
+let x2Number  = null;   // the lucky x2 number for this local
+let localName = '';          // this local's name
+let localNameManuallySet = false; // true once host sets it
+
+// Show "Buena Suerte" overlay for 3 seconds
+function showBuenaSuerte(name) {
+  const ov  = document.getElementById('buena-suerte-ov');
+  const lbl = document.getElementById('bs-local');
+  lbl.textContent = name ? `a todos en ${name}` : '';
+  ov.classList.add('show');
+  launchFW();
+  setTimeout(() => { ov.classList.remove('show'); stopFW(); }, 3000);
+}
+
+// Pick a random non-FREE cell number from the cards as the x2 lucky number
+function pickX2Number(cards) {
+  const allNums = [];
+  cards.forEach(card => {
+    for (let r = 0; r < 5; r++)
+      for (let c = 0; c < 5; c++)
+        if (!(r===2&&c===2)) allNums.push(card[r][c]);
+  });
+  return allNums[Math.floor(Math.random() * allNums.length)];
+}
+
+// Highlight x2 cells on all cards
+function applyX2Cells() {
+  if (!x2Number) return;
+  document.querySelectorAll('.cell').forEach(el => {
+    if (parseInt(el.dataset.num) === x2Number) {
+      if (!el.classList.contains('marked')) {
+        el.classList.add('x2-lucky');
+      }
+    }
+  });
+}
+
+// Mark number
+function markNumber(n,animate){
+  if(gameOver) return; // fullCard won — stop marking
+  cardsData.forEach((_,ci)=>{
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+      const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+      if(el&&parseInt(el.dataset.num)===n){
+        const isX2 = (parseInt(el.dataset.num) === x2Number);
+        el.classList.remove('x2-lucky');
+        el.classList.add('marked');
+        if(isX2) el.classList.add('x2-marked');
+        if(animate) flashCell(el);
+      }
+    }
+    checkWin(ci);
+  });
+}
+
+function flashCell(el){
+  if(!el)return;
+  el.style.position='relative';el.style.zIndex='10';
+  const frames=[
+    {transform:'scale(1.35)',boxShadow:'0 0 0 4px #ffd700,0 0 18px #ffd700',filter:'brightness(2)',offset:0},
+    {transform:'scale(1.18)',boxShadow:'0 0 0 3px #ff8800,0 0 12px #ff8800',filter:'brightness(1.5)',offset:.2},
+    {transform:'scale(1.08)',boxShadow:'0 0 0 2px #ff4400,0 0 8px #ff4400',filter:'brightness(1.2)',offset:.45},
+    {transform:'scale(.96)',boxShadow:'0 0 7px rgba(255,60,0,.8)',filter:'brightness(1)',offset:.7},
+    {transform:'scale(.94)',boxShadow:'0 0 8px rgba(255,60,0,.7)',filter:'brightness(1)',offset:1},
+  ];
+  const anim=el.animate(frames,{duration:1400,easing:'ease-out',fill:'forwards'});
+  anim.onfinish=()=>{el.style.zIndex='';el.style.position='';};
+  const ring=document.createElement('div');
+  ring.style.cssText='position:absolute;inset:-4px;border-radius:7px;pointer-events:none;border:2.5px solid #ffd700;z-index:20;';
+  el.appendChild(ring);
+  ring.animate([
+    {opacity:1,transform:'scale(1)',borderColor:'#ffd700'},
+    {opacity:.7,transform:'scale(1.5)',borderColor:'#ff8800'},
+    {opacity:0,transform:'scale(2.2)',borderColor:'#ff4400'},
+  ],{duration:750,easing:'ease-out',fill:'forwards'}).onfinish=()=>ring.remove();
+}
+
+// Win detection
+function isMarked(ci,r,c){if(r===2&&c===2)return true;const el=document.getElementById(`cell-${ci}-${r}-${c}`);return el&&el.classList.contains('marked');}
+function hasLine(ci){
+  for(let r=0;r<5;r++)if([0,1,2,3,4].every(c=>isMarked(ci,r,c)))return{type:'row',idx:r};
+  for(let c=0;c<5;c++)if([0,1,2,3,4].every(r=>isMarked(ci,r,c)))return{type:'col',idx:c};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,i)))return{type:'diag',idx:0};
+  if([0,1,2,3,4].every(i=>isMarked(ci,i,4-i)))return{type:'diag',idx:1};
+  return null;
+}
+function hasFullCard(ci){for(let r=0;r<5;r++)for(let c=0;c<5;c++)if(!isMarked(ci,r,c))return false;return true;}
+function hasPattern(ci,name){return PATTERNS[name].every(([r,c])=>isMarked(ci,r,c));}
+
+function highlightLine(ci,line){
+  const key=`${ci}-${line.type}-${line.idx}`;if(highlightedLines.has(key))return;highlightedLines.add(key);
+  const cells=[];
+  if(line.type==='row')for(let c=0;c<5;c++)cells.push([line.idx,c]);
+  else if(line.type==='col')for(let r=0;r<5;r++)cells.push([r,line.idx]);
+  else for(let i=0;i<5;i++)cells.push([i,line.idx===0?i:4-i]);
+  cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
+}
+
+// isCardX2: ONLY triggers if the ball that just came out IS the x2 number
+// AND that x2 number is on this card AND it's what completed the prize
+function isCardX2(ci) {
+  if (!x2Number) return false;
+  // The ball that just came out must BE the x2 number exactly
+  if (lastDrawnBall !== x2Number) return false;
+  // Confirm x2Number is on this specific card
+  for (let r = 0; r < 5; r++)
+    for (let c = 0; c < 5; c++) {
+      const el = document.getElementById(`cell-${ci}-${r}-${c}`);
+      if (el && parseInt(el.dataset.num) === x2Number) return true;
+    }
+  return false;
+}
+
+function isInLine(ci, line, num) {
+  // Check if num appears in the winning line cells
+  const cells = [];
+  if (line.type==='row') for(let c=0;c<5;c++) cells.push([line.idx,c]);
+  else if (line.type==='col') for(let r=0;r<5;r++) cells.push([r,line.idx]);
+  else for(let i=0;i<5;i++) cells.push([i, line.idx===0?i:4-i]);
+  return cells.some(([r,c]) => {
+    const el = document.getElementById(`cell-${ci}-${r}-${c}`);
+    return el && parseInt(el.dataset.num) === num;
+  });
+}
+
+// ── SALES TRACKING ───────────────────────────────────────────────────
+const soldCards = new Set(); // card indices that are sold
+
+function toggleSold(ci){
+  const btn=document.getElementById(`sold-btn-${ci}`);
+  const inp=document.getElementById(`name-${ci}`);
+  const cardEl=document.getElementById(`card-${ci}`);
+  if(soldCards.has(ci)){
+    // Undo sale
+    soldCards.delete(ci);
+    btn.textContent='VENDER';
+    btn.style.background='#1a0840';
+    btn.style.color='#aaa';
+    btn.style.borderColor='#d4a93a44';
+    if(cardEl) cardEl.style.outline='';
+    ws.send(JSON.stringify({type:'card_unsold',cardIdx:ci}));
+  } else {
+    // Mark sold
+    soldCards.add(ci);
+    const playerName=inp?.value.trim()||`Cartón ${ci+1}`;
+    btn.textContent='✅ VENDIDO';
+    btn.style.background='#003300';
+    btn.style.color='#44ff88';
+    btn.style.borderColor='#44ff8844';
+    if(cardEl) cardEl.style.outline='2px solid #44ff8866';
+    ws.send(JSON.stringify({type:'card_sold',cardIdx:ci,playerName,price:50}));
+  }
+}
+
+// Handle sold confirm from server (another session sold it)
+function handleCardSoldConfirm(localId, cardIdx, playerName){
+  if(localId !== LOCAL_ID) return;
+  soldCards.add(cardIdx);
+  const cardEl=document.getElementById(`card-${cardIdx}`);
+  if(cardEl){
+    cardEl.style.outline='2px solid #44ff8866';
+    // Add sold overlay in center of card
+    let overlay=cardEl.querySelector('.sold-overlay');
+    if(!overlay){
+      overlay=document.createElement('div');
+      overlay.className='sold-overlay';
+      cardEl.style.position='relative';
+      cardEl.appendChild(overlay);
+    }
+    overlay.innerHTML=`<div class="sold-badge">✅ VENDIDO</div><div class="sold-player">${playerName||''}</div>`;
+  }
+  const inp=document.getElementById(`name-${cardIdx}`);
+  if(inp) inp.value=playerName||'';
+  const btn=document.getElementById(`sold-btn-${cardIdx}`);
+  if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';}
+}
+
+function checkWin(ci){
+  if(prizes.fullCard)return;
+  if(prizes.line&&hasFullCard(ci)){
+    prizes.fullCard=true;
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
+    const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+    gameOver = true;
+    ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
+    return;
+  }
+  if(!prizes.line){
+    const line=hasLine(ci);
+    if(line){prizes.line=true;highlightLine(ci,line);
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      const isX2Win = isCardX2(ci);
+      ws.send(JSON.stringify({type:'prize_won',prize:'line',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isX2Win}));return;}
+  }
+  // Check COSITA (2 horizontal adjacent in corner row)
+  if(!prizes.COSITA){
+    const cositaCorners=[[[0,0],[0,1]],[[0,3],[0,4]],[[4,0],[4,1]],[[4,3],[4,4]]];
+    for(const pair of cositaCorners){
+      if(pair.every(([r,c])=>isMarked(ci,r,c))){
+        prizes.COSITA=true;
+        pair.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+          if(el)el.style.cssText='background:radial-gradient(circle,#ff9944,#cc5500)!important;border-color:#ff9944!important;box-shadow:0 0 12px #ff994499!important;color:#000!important;font-weight:900!important;';
+        });
+        const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+        ws.send(JSON.stringify({type:'prize_won',prize:'COSITA',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
+        return;
+      }
+    }
+  }
+  // Check MEDIO (2 balls in middle row)
+  if(!prizes.MEDIO){
+    const midMarked=[0,1,3,4].filter(c=>isMarked(ci,2,c));
+    if(midMarked.length>=2){
+      prizes.MEDIO=true;
+      midMarked.slice(0,2).forEach(c=>{const el=document.getElementById(`cell-${ci}-2-${c}`);
+        if(el)el.style.cssText='background:radial-gradient(circle,#ff44aa,#880055)!important;border-color:#ff44aa!important;box-shadow:0 0 12px #ff44aa99!important;color:#fff!important;font-weight:900!important;';
+      });
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:'MEDIO',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
+      return;
+    }
+  }
+  for(const shape of['L','T','X','CRUZ']){
+    if(!prizes[shape]&&hasPattern(ci,shape)){
+      prizes[shape]=true;
+      const PCOLS={L:'#44ff88',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+        if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
+      const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
+      ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));return;
+    }
+  }
+}
+
+// Prize panel
+function markPrizePanelWon(prize){const el=document.getElementById(`pp-${prize}`);if(el)el.classList.add('won');}
+function resetPrizePanel(){Object.keys(prizes).forEach(k=>{const el=document.getElementById(`pp-${k}`);if(el)el.classList.remove('won');});}
+function restorePrizes(p){Object.entries(p).forEach(([k,v])=>{if(v)markPrizePanelWon(k);});}
+
+// Slot machine
+function buildReel(reelEl,fd){
+  reelEl.innerHTML='';const seq=[];
+  for(let i=0;i<30;i++)seq.push(Math.floor(Math.random()*10));
+  seq.push(fd);
+  seq.forEach(d=>{const div=document.createElement('div');div.className='slot-digit';div.textContent=d;reelEl.appendChild(div);});
+  return seq.length;
+}
+function rollDrum(reelEl,drumEl,fd,dur,cb){
+  const count=buildReel(reelEl,fd);
+  const target=-(count-1)*50;
+  reelEl.style.transition='none';reelEl.style.top='0px';
+  void reelEl.offsetHeight;
+  reelEl.style.transition=`top ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94)`;
+  reelEl.style.top=target+'px';setTimeout(cb,dur);
+}
+function updateLastBall(n,col){
+  if(slotRolling)return;slotRolling=true;
+  const color=COL_COLORS[col];
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#555';badge.style.opacity='1';
+  const dT=document.getElementById('drum-tens'),dU=document.getElementById('drum-units');
+  dT.style.borderColor='#d4a93a';dU.style.borderColor='#d4a93a';
+  rollDrum(document.getElementById('reel-tens'),dT,Math.floor(n/10),1400,()=>{});
+  rollDrum(document.getElementById('reel-units'),dU,n%10,2000,()=>{
+    badge.textContent=col;badge.style.color=color;badge.style.borderColor=color;badge.style.boxShadow=`0 0 14px ${color}bb`;
+    dT.style.borderColor=color;dU.style.borderColor=color;
+    dT.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    dU.style.boxShadow=`0 0 18px ${color}cc,inset 0 0 8px #0009`;
+    slotRolling=false;
+  });
+}
+function resetSlot(){
+  slotRolling=false;
+  const badge=document.getElementById('slot-letter');
+  badge.textContent='?';badge.style.color='#555';badge.style.borderColor='#444';badge.style.boxShadow='none';badge.style.opacity='1';
+  ['drum-tens','drum-units'].forEach(id=>{
+    const d=document.getElementById(id);if(d){d.style.borderColor='#d4a93a';d.style.boxShadow='';}
+    const r=d&&d.querySelector('.slot-reel');
+    if(r){r.style.transition='none';r.style.top='0px';r.innerHTML='<div class="slot-digit">—</div>';}
+  });
+}
+
+// Winner popup
+function showWinner(msg){
+  const info=PRIZES_INFO[msg.prize]||PRIZES_INFO.line;
+  const doubled = msg.x2 ? info.amount * 2 : info.amount;
+  const amt = msg.x2 ? doubled : info.amount;
+  const cardNum = msg.cardIdx+1;
+  const cardName = msg.playerName || `Cartón ${cardNum}`;
+
+  // Build display text: "Cartón 5 gana el Bingo $150 pesos"
+  const prizeLabel = info.prizeLabel || info.msg.replace('¡','').replace('!','').trim();
+  document.getElementById('w-icon').textContent = msg.x2 ? '✨' : info.icon;
+  document.getElementById('w-title').textContent = msg.x2
+    ? `${cardName} gana ${prizeLabel} ¡BONO X2!`
+    : `${cardName} gana ${prizeLabel}`;
+  document.getElementById('w-name').textContent = '';
+  document.getElementById('w-prize').textContent = '$' + amt + ' pesos' + (msg.x2 ? ' ×2' : '');
+  document.getElementById('w-sub').textContent = msg.prize==='fullCard'
+    ? '¡GRAN PREMIO FINAL! 🎉'
+    : '';
+  document.getElementById('winner-ov').classList.add('show');
+  launchFW();
+  clearTimeout(window._winnerTimer);
+  if(msg.prize==='fullCard') window._winnerTimer = setTimeout(closeWinner, 60000);
+  else window._winnerTimer = setTimeout(closeWinner, 7000);
+}
+function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
+
+let fwAF,fwP=[],fwCtx;
+function launchFW(){
+  const fc=document.getElementById('fwc');fc.width=window.innerWidth;fc.height=window.innerHeight;
+  fwCtx=fc.getContext('2d');fwP=[];
+  const cols=['#ffd700','#ff4488','#44ddff','#88ff44','#ff8800','#cc44ff'];
+  for(let i=0;i<160;i++)fwP.push({x:Math.random()*fc.width,y:Math.random()*fc.height*.7,
+    vx:(Math.random()-.5)*9,vy:(Math.random()-.5)*9-4,r:Math.random()*5+2,
+    c:cols[Math.floor(Math.random()*cols.length)],life:1,dec:Math.random()*.01+.006});
+  fwAF=requestAnimationFrame(dFW);
+}
+function dFW(){
+  fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);
+  fwP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.life-=p.dec;
+    fwCtx.globalAlpha=Math.max(0,p.life);fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.r,0,2*Math.PI);fwCtx.fillStyle=p.c;fwCtx.fill();});
+  fwCtx.globalAlpha=1;fwP=fwP.filter(p=>p.life>0);
+  if(fwP.length)fwAF=requestAnimationFrame(dFW);
+}
+function stopFW(){cancelAnimationFrame(fwAF);if(fwCtx)fwCtx.clearRect(0,0,fwCtx.canvas.width,fwCtx.canvas.height);}
 </script>
 </body>
 </html>
