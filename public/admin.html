@@ -32,9 +32,34 @@ tr:hover td{background:#0a0220}
 .btn:hover{background:#d4a93a;color:#000}
 select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;
   color:#fff;font-family:'Cinzel',serif;font-size:11px;outline:none;margin-right:8px}
+
+/* AUTH GATE — content hidden until login validates */
+#admin-content{display:none}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
+#login-box h2{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;text-align:center;margin-bottom:4px}
+#login-box p{font-size:10px;color:#555;text-align:center;margin-bottom:20px;letter-spacing:1px}
+#login-box label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px}
+#login-box input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
+#login-box input:focus{border-color:#d4a93a}
+#login-box button{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
+#login-error{color:#ff4466;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
 </style>
 </head>
 <body>
+
+<div id="login-screen">
+  <div id="login-box">
+    <h2>✦ BINGO TAVAREZ ✦</h2>
+    <p>PANEL DE ADMINISTRACIÓN</p>
+    <label>CONTRASEÑA</label>
+    <input type="password" id="admin-pass" placeholder="••••••" autocomplete="off">
+    <button onclick="doAdminLogin()">ENTRAR</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="admin-content">
 <h1>✦ BINGO TAVAREZ — ADMIN ✦</h1>
 
 <div class="tabs">
@@ -75,6 +100,8 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
   </table>
 </div>
 
+</div><!-- /admin-content -->
+
 <script>
 function showTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['current','history'][i]===id));
@@ -86,7 +113,8 @@ function showTab(id){
 
 async function loadReport(){
   try{
-    const r=await fetch('/api/sales/current');
+    const r=await fetch('/api/sales/current',{headers:{Authorization:'Bearer '+sessionStorage.getItem('admin_token')}});
+    if(r.status===401){ sessionStorage.removeItem('admin_token'); location.reload(); return; }
     const d=await r.json();
     renderReport(d.report, d.game);
     document.getElementById('report-time').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
@@ -156,7 +184,8 @@ function showLocalDetail(key, local){
 
 async function loadHistory(){
   try{
-    const r=await fetch('/api/sales/history');
+    const r=await fetch('/api/sales/history',{headers:{Authorization:'Bearer '+sessionStorage.getItem('admin_token')}});
+    if(r.status===401){ sessionStorage.removeItem('admin_token'); location.reload(); return; }
     const d=await r.json();
     const tbody=document.getElementById('history-table');
     tbody.innerHTML='';
@@ -178,28 +207,64 @@ async function loadHistory(){
   }catch(e){alert('Error: '+e.message);}
 }
 
-// Auto-refresh every 30s
-loadReport();
-setInterval(loadReport, 30000);
+// ── AUTH GATE ────────────────────────────────────────────────────────
+let adminStarted = false;
 
-// WS for real-time sales reports
-(function connectAdminWS(){
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if(msg.type === 'sales_report_auto'){
-      // New sales report arrived - refresh
-      loadReport();
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;top:16px;right:16px;background:#003300;border:1px solid #44ff88;border-radius:8px;padding:10px 14px;font-size:11px;color:#44ff88;z-index:100;font-family:"Cinzel",serif';
-      banner.textContent = '✅ Nueva contabilidad recibida';
-      document.body.appendChild(banner);
-      setTimeout(()=>banner.remove(), 4000);
-    }
-  };
-  ws.onclose = () => setTimeout(connectAdminWS, 3000);
-})();
+async function doAdminLogin(){
+  const pass = document.getElementById('admin-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  try{
+    const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
+    const d = await r.json();
+    if(!r.ok){ errEl.textContent = d.error || 'Contraseña incorrecta'; return; }
+    sessionStorage.setItem('admin_token', d.token);
+    enterAdmin();
+  }catch(e){ errEl.textContent = 'Error de conexión'; }
+}
+
+function enterAdmin(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'block';
+  startAdmin();
+}
+
+function startAdmin(){
+  if(adminStarted) return;
+  adminStarted = true;
+
+  // Auto-refresh every 30s
+  loadReport();
+  setInterval(loadReport, 30000);
+
+  // WS for real-time sales reports
+  (function connectAdminWS(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if(msg.type === 'sales_report_auto'){
+        loadReport();
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:16px;right:16px;background:#003300;border:1px solid #44ff88;border-radius:8px;padding:10px 14px;font-size:11px;color:#44ff88;z-index:100;font-family:"Cinzel",serif';
+        banner.textContent = '✅ Nueva contabilidad recibida';
+        document.body.appendChild(banner);
+        setTimeout(()=>banner.remove(), 4000);
+      }
+    };
+    ws.onclose = () => setTimeout(connectAdminWS, 3000);
+  })();
+}
+
+// Restore session if already logged in this tab
+if(sessionStorage.getItem('admin_token')){
+  enterAdmin();
+}
+
+// Enter key submits login
+document.getElementById('admin-pass').addEventListener('keydown', e=>{
+  if(e.key==='Enter') doAdminLogin();
+});
 </script>
 </body>
 </html>
