@@ -292,9 +292,9 @@ body.playing .sold-overlay{display:none}
       <div style="font-size:8px;color:#d4a93a;letter-spacing:2px;text-transform:uppercase;text-align:right;font-family:'Cinzel',serif">Premios</div>
       <div id="prize-panel">
         <div class="prize-item" id="pp-COSITA"  style="color:#ff9944;border-color:#ff994455"><span class="pi-icon">🎯</span><span class="pi-val">Cosita $50</span></div>
-        <div class="prize-item" id="pp-MEDIO"   style="color:#ff44aa;border-color:#ff44aa55"><span class="pi-icon">〰️</span><span class="pi-val">Medio $50</span></div>
-        <div class="prize-item" id="pp-L"       style="color:#44ff88;border-color:#44ff8855"><span class="pi-icon">𝕃</span><span class="pi-val">L $50</span></div>
-        <div class="prize-item" id="pp-T"       style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">𝕋</span><span class="pi-val">T $50</span></div>
+        <div class="prize-item" id="pp-MEDIO"   style="color:#ff44aa;border-color:#ff44aa55"><span class="pi-icon">➖</span><span class="pi-val">Medio $50</span></div>
+        <div class="prize-item" id="pp-L"       style="color:#44ff88;border-color:#44ff8855"><span class="pi-icon">🟩</span><span class="pi-val">L $50</span></div>
+        <div class="prize-item" id="pp-T"       style="color:#ee88ff;border-color:#ee88ff55"><span class="pi-icon">🟪</span><span class="pi-val">T $50</span></div>
         <div class="prize-item" id="pp-line"    style="color:#00ffcc;border-color:#00ffcc55"><span class="pi-icon">⭐</span><span class="pi-val">Bingo $150</span></div>
         <div class="prize-item" id="pp-fullCard" style="color:#ffd700;border-color:#ffd70055"><span class="pi-icon">🌟</span><span class="pi-val">Full $500</span></div>
       </div>
@@ -346,11 +346,11 @@ const LOCAL_ID=parseInt(pathParts[pathParts.length-1])||1;
 const COL_COLORS={B:'#ff4466',I:'#ffaa00',N:'#44ddff',G:'#44ff88',O:'#dd44ff'};
 const PRIZES_INFO={
   COSITA:  {icon:'🎯',color:'#ff9944',msg:'¡LA COSITA!',prizeLabel:'la Cosita',     prize:'$50 pesos', amount:50},
-  MEDIO:   {icon:'〰️',color:'#ff44aa',msg:'¡EL MEDIO!', prizeLabel:'el Medio',      prize:'$50 pesos', amount:50},
-  L:       {icon:'𝕃', color:'#44ff88',msg:'¡LA L!',    prizeLabel:'la L',          prize:'$50 pesos', amount:50},
-  T:       {icon:'𝕋', color:'#ee88ff',msg:'¡LA T!',    prizeLabel:'la T',          prize:'$50 pesos', amount:50},
-  X:       {icon:'✖️', color:'#ff88aa',msg:'¡LA X!',    prizeLabel:'la X',          prize:'$50 pesos', amount:50},
-  CRUZ:    {icon:'✚', color:'#88ffff',msg:'¡LA CRUZ!', prizeLabel:'la Cruz',       prize:'$50 pesos', amount:50},
+  MEDIO:   {icon:'➖',color:'#ff44aa',msg:'¡EL MEDIO!', prizeLabel:'el Medio',      prize:'$50 pesos', amount:50},
+  L:       {icon:'🟩', color:'#44ff88',msg:'¡LA L!',    prizeLabel:'la L',          prize:'$50 pesos', amount:50},
+  T:       {icon:'🟪', color:'#ee88ff',msg:'¡LA T!',    prizeLabel:'la T',          prize:'$50 pesos', amount:50},
+  X:       {icon:'❌', color:'#ff88aa',msg:'¡LA X!',    prizeLabel:'la X',          prize:'$50 pesos', amount:50},
+  CRUZ:    {icon:'➕', color:'#88ffff',msg:'¡LA CRUZ!', prizeLabel:'la Cruz',       prize:'$50 pesos', amount:50},
   line:    {icon:'⭐',color:'#00ffcc',msg:'¡EL BINGO!', prizeLabel:'el Bingo',     prize:'$150 pesos',amount:150},
   fullCard:{icon:'🌟',color:'#ffd700',msg:'¡CARTÓN LLENO!',prizeLabel:'Cartón Lleno', prize:'$500 pesos',amount:500},
 };
@@ -638,7 +638,7 @@ const tickerItems = []; // prize history for ticker
 
 const PRIZES_INFO_TICKER = {
   COSITA:  {icon:'🎯', label:'La Cosita',   prize:'$50 pesos'},
-  MEDIO:   {icon:'〰️', label:'El Medio',    prize:'$50 pesos'},
+  MEDIO:   {icon:'➖', label:'El Medio',    prize:'$50 pesos'},
   L:       {icon:'🏅', label:'Figura L',    prize:'$50 pesos'},
   T:       {icon:'🏅', label:'Figura T',    prize:'$50 pesos'},
   X:       {icon:'🏅', label:'Figura X',    prize:'$50 pesos'},
