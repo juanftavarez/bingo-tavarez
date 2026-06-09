@@ -112,12 +112,15 @@ html,body{background:#0a0510;color:#fff;font-family:'Cinzel',serif;
   border-radius:9px;padding:4px 4px 5px;display:flex;flex-direction:column;gap:2px;
   box-shadow:0 2px 6px rgba(0,0,80,.1)}
 .card-name-wrap{display:flex;align-items:center;gap:4px;margin-bottom:2px;flex-wrap:wrap}
-.sold-overlay{position:absolute;inset:0;background:rgba(0,40,0,.85);border-radius:8px;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:2}
-.sold-overlay .sold-badge{font-family:'Cinzel Decorative',serif;font-size:13px;color:#44ff88;
-  font-weight:900;letter-spacing:2px;text-align:center}
-.sold-overlay .sold-player{font-size:11px;color:#aaffaa;margin-top:4px;text-align:center;
-  max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sold-overlay{position:absolute;top:0;left:0;right:0;background:rgba(0,40,0,.78);
+  border-radius:8px 8px 0 0;padding:3px 4px;
+  display:flex;align-items:center;justify-content:center;gap:6px;pointer-events:none;z-index:2}
+.sold-overlay .sold-badge{font-family:'Cinzel Decorative',serif;font-size:11px;color:#44ff88;
+  font-weight:900;letter-spacing:1px;text-align:center}
+.sold-overlay .sold-player{font-size:10px;color:#aaffaa;text-align:center;
+  max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* During the playing phase, hide the sold banner so balls are fully visible */
+body.playing .sold-overlay{display:none}
 .card-num-badge{flex-shrink:0;background:linear-gradient(135deg,#1a3a8a,#0a1e5e);color:#fff;
   font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:900;
   width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -406,6 +409,7 @@ function connect(){
         }
         break;
       case 'new_game':
+        document.body.classList.remove('playing'); // back to selling phase
         gameOver=false;
         lastDrawnBall=null;
         tickerItems.length=0;
@@ -425,6 +429,7 @@ function connect(){
         setTimeout(() => applyX2Cells(), 400);
         break;
       case 'draw':
+        document.body.classList.add('playing'); // hide sold banners during play
         drawnNums.add(msg.n);
         lastDrawnBall = msg.n;  // track which ball just came out
         updateLastBall(msg.n,getCol(msg.n));
@@ -480,6 +485,7 @@ function connect(){
         gameOver = false;
         break;
       case 'reset':
+        document.body.classList.remove('playing'); // back to selling phase
         gameOver=false;
         x2Number=null;
         loadCards(msg.cards);
