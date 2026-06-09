@@ -13,7 +13,7 @@ const CARDS_PER_LOCAL = 21;
 
 // Cajero users — one per local
 const CAJERO_USERS = {};
-for(let i=1;i<=21;i++){
+for(let i=1;i<=NUM_LOCALS;i++){
   CAJERO_USERS[`local${i}`] = {
     password: `bingo${i}`,  // default password: bingo1, bingo2, etc
     localId: i,
@@ -318,6 +318,9 @@ wss.on('connection', (ws, req) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
+    // Resolve this connection's stored info (role, localId). Used by card_sold/unsold etc.
+    const info = clients.get(ws) || {};
+
     switch (msg.type) {
       case 'join_host':
         clients.set(ws, { role: 'host' });
@@ -375,6 +378,7 @@ wss.on('connection', (ws, req) => {
 
       case 'card_sold': {
         // Local reports a card was sold
+        if (info.localId == null) break; // connection not registered to a local
         const { cardIdx, playerName, price } = msg;
         const localKey = `local_${info.localId}`;
         if (!salesData.currentGame.sales[localKey]) salesData.currentGame.sales[localKey] = [];
@@ -398,6 +402,7 @@ wss.on('connection', (ws, req) => {
 
       case 'card_unsold': {
         // Undo a sale
+        if (info.localId == null) break; // connection not registered to a local
         const localKey2 = `local_${info.localId}`;
         if (salesData.currentGame.sales[localKey2]) {
           salesData.currentGame.sales[localKey2] = salesData.currentGame.sales[localKey2].filter(s => s.cardIdx !== msg.cardIdx);
@@ -599,11 +604,21 @@ app.post('/api/admin/login', (req, res) => {
   res.json({ ok: true, token: Buffer.from('admin:admin2024').toString('base64') });
 });
 
+function verifyAdmin(req) {
+  const auth = (req.headers.authorization || '').replace('Bearer ', '');
+  try {
+    const decoded = Buffer.from(auth, 'base64').toString('utf8');
+    return decoded === 'admin:admin2024';
+  } catch(e) { return false; }
+}
+
 app.get('/api/sales/current', (req, res) => {
+  if (!verifyAdmin(req)) return res.status(401).json({ error: 'No autorizado' });
   res.json({ game: salesData.currentGame, report: buildSalesReport(salesData.currentGame) });
 });
 
 app.get('/api/sales/history', (req, res) => {
+  if (!verifyAdmin(req)) return res.status(401).json({ error: 'No autorizado' });
   const history = salesData.games.slice(0, 50).map(g => ({
     gameId: g.gameId, startedAt: g.startedAt, endedAt: g.endedAt,
     report: buildSalesReport(g)
