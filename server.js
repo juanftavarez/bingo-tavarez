@@ -303,6 +303,11 @@ function startNewGame() {
   });
   sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
   // startCountdown will open cajero when called after fullCard
+
+  // Auto-start the ball draw shortly after cards are dealt,
+  // so "NUEVA PARTIDA" begins the game without a separate PLAY press.
+  waitingForPlay = false;
+  setTimeout(() => startAutoDraw(), 1500);
 }
 
 function getHostWs() {
