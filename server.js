@@ -138,12 +138,10 @@ function startAutoDraw() {
     const n = remaining[Math.floor(Math.random() * remaining.length)];
     gameState.drawnNumbers.push(n);
     broadcastAll({ type: 'draw', n });
-    // If ALL 75 balls drawn with no fullCard, open next selling window
+    // If ALL 75 balls drawn with no fullCard, the round ends here
     if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-      stopAutoDraw();
-      console.log('All 75 balls drawn — opening next selling window');
-      startNewGame();
-      startCountdown(ROUND_MINUTES * 60);
+      console.log('All 75 balls drawn — round ends');
+      finishRound();
     }
   }, DRAW_INTERVAL_MS);
 }
@@ -156,6 +154,37 @@ function stopAutoDraw() {
 }
 
 let waitingForPlay = false; // true after reset, waiting for PLAY button
+let autoChainStopped = false; // true when host pressed DETENER — blocks next round
+
+// Called when a round's ball-drawing has ENDED (fullCard or all 75 balls).
+// Sends the final cuadre (with prizes) to admin, then either chains the next
+// round automatically or stops if the host pressed DETENER.
+let roundFinishing = false;
+function finishRound() {
+  if (roundFinishing) return; // guard against double-trigger
+  roundFinishing = true;
+
+  stopAutoDraw();
+
+  // Final cuadre of THIS round, prizes included
+  const report = buildSalesReport(salesData.currentGame);
+  broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
+
+  if (autoChainStopped) {
+    // Host stopped the chain — do not open a new round
+    gameState.active = false;
+    broadcastAll({ type: 'chain_stopped' });
+    roundFinishing = false;
+    return;
+  }
+
+  // Chain the next round: archive, deal new cards, open selling window
+  setTimeout(() => {
+    startNewGame();
+    startCountdown(ROUND_MINUTES * 60);
+    roundFinishing = false;
+  }, 3000); // 3s so the winner animation shows
+}
 
 function buildSalesReport(game) {
   const report = { locals: {}, totals: { cards: 0, revenue: 0, prizes: 0, net: 0 } };
@@ -198,13 +227,11 @@ function startCountdown(seconds = ROUND_MINUTES * 60) {
     countdownSeconds--;
     broadcastAll({ type: 'countdown', seconds: countdownSeconds });
 
-    // Lock cajero at exactly 60s remaining
+    // Lock cajero at exactly 60s remaining (selling closes; cuadre is sent
+    // later, when the round actually ENDS — see finishRound)
     if (!cajeroClosed && countdownSeconds <= CAJERO_CLOSE_AT) {
       cajeroClosed = true;
       broadcastAll({ type: 'cajero_close' });
-      // Build and send sales report to all
-      const report = buildSalesReport(salesData.currentGame);
-      broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
       console.log('🔒 Cajero locked at', countdownSeconds, 'seconds remaining');
     }
 
@@ -368,9 +395,34 @@ wss.on('connection', (ws, req) => {
       case 'new_game':
         // Deal fresh cards + reset accounting, then open the selling window
         // (countdown). Balls are NOT drawn until the countdown reaches zero.
+        autoChainStopped = false; // (re)start the automatic chain
         stopAutoDraw();
         startNewGame();
         startCountdown(ROUND_MINUTES * 60);
+        break;
+
+      case 'start_now':
+        // Skip the remaining selling window and start drawing balls immediately
+        // on the cards already sold this round.
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+        gameState.countdownActive = false;
+        broadcastAll({ type: 'cajero_close' }); // selling closes now
+        broadcastAll({ type: 'countdown', seconds: 0 });
+        gameState.active = true;
+        waitingForPlay = false;
+        startAutoDraw();
+        break;
+
+      case 'stop_chain':
+        // Host wants the auto-chain to stop after the current round
+        autoChainStopped = true;
+        broadcastAll({ type: 'chain_stopping' });
+        break;
+
+      case 'resume_chain':
+        // Host re-enables the auto-chain
+        autoChainStopped = false;
+        broadcastAll({ type: 'chain_resumed' });
         break;
 
       case 'toggle_auto':
@@ -431,12 +483,10 @@ wss.on('connection', (ws, req) => {
         if (!gameState.drawnNumbers.includes(msg.n)) {
           gameState.drawnNumbers.push(msg.n);
           broadcastAll({ type: 'draw', n: msg.n });
-          // If ALL 75 balls drawn with no fullCard, open next selling window
+          // If ALL 75 balls drawn with no fullCard, the round ends here
           if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-            console.log('All 75 balls drawn — opening next selling window');
-            stopAutoDraw();
-            startNewGame();
-            startCountdown(ROUND_MINUTES * 60);
+            console.log('All 75 balls drawn — round ends');
+            finishRound();
           }
         }
         break;
@@ -478,14 +528,9 @@ wss.on('connection', (ws, req) => {
             x2: msg.x2 || false
           };
           broadcastAll(prizeMsg); // sends to every connected client including all locals
-          // Auto start next round when fullCard is won (Opción B):
-          // archive this round, deal new cards, and open the selling window.
-          if (msg.prize === 'fullCard' && !gameState.countdownActive) {
-            setTimeout(() => {
-              stopAutoDraw();
-              startNewGame();
-              startCountdown(ROUND_MINUTES * 60);
-            }, 3000); // 3s delay so winner animation shows
+          // Round ends when fullCard is won → send cuadre + chain next round
+          if (msg.prize === 'fullCard') {
+            finishRound();
           }
         }
         break;
