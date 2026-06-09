@@ -22,6 +22,13 @@ for(let i=1;i<=21;i++){
 }
 
 const CARD_PRICE = 50;
+
+// Prize amounts — must match local.html PRIZES table
+const PRIZE_AMOUNTS = {
+  COSITA: 50, MEDIO: 50, L: 50, T: 50, X: 50, CRUZ: 50,
+  line: 150, fullCard: 500
+};
+
 const fs = require('fs');
 const SALES_FILE = './sales_data.json';
 let salesData = { games: [], currentGame: { gameId: Date.now(), startedAt: null, sales: {}, prizes: {} } };
@@ -131,11 +138,12 @@ function startAutoDraw() {
     const n = remaining[Math.floor(Math.random() * remaining.length)];
     gameState.drawnNumbers.push(n);
     broadcastAll({ type: 'draw', n });
-    // If ALL 75 balls drawn, start countdown
+    // If ALL 75 balls drawn with no fullCard, open next selling window
     if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
       stopAutoDraw();
-      console.log('All 75 balls drawn — starting 10-min countdown');
-      startCountdown();
+      console.log('All 75 balls drawn — opening next selling window');
+      startNewGame();
+      startCountdown(ROUND_MINUTES * 60);
     }
   }, DRAW_INTERVAL_MS);
 }
@@ -205,7 +213,9 @@ function startCountdown(seconds = ROUND_MINUTES * 60) {
       countdownInterval = null;
       gameState.countdownActive = false;
       waitingForPlay = false;
-      startNewGame();
+      // Selling window closed → start drawing balls on the SAME cards
+      // that were sold during this window. Do NOT re-deal cards here.
+      gameState.active = true;
       setTimeout(() => startAutoDraw(), 2000);
     }
   }, 1000);
@@ -255,21 +265,19 @@ function broadcastLocalsUpdate() {
 
 // ── START NEW GAME ───────────────────────────────────────────────────
 function startNewGame() {
-  // Archive current game to history
+  // Archive current game to history (with its sales + prizes)
   if (salesData.currentGame.startedAt) {
     salesData.currentGame.endedAt = new Date().toISOString();
     salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
     salesData.games.unshift(salesData.currentGame); // newest first
     if (salesData.games.length > 100) salesData.games = salesData.games.slice(0, 100);
   }
-  // Keep sales from the selling window (collected during countdown)
-  // They belong to this new game
-  const keptSales = salesData.currentGame.sales || {};
+  // Fresh round — clean slate. Sales of the new selling window start empty.
   salesData.currentGame = {
     gameId: Date.now(),
     startedAt: new Date().toISOString(),
-    sales: keptSales, // keep names already entered
-    prizes: {}
+    sales: {},   // reset: no carried-over sales
+    prizes: {}   // reset: no carried-over prizes
   };
   saveSalesData();
 
@@ -358,7 +366,11 @@ wss.on('connection', (ws, req) => {
         break;
 
       case 'new_game':
+        // Deal fresh cards + reset accounting, then open the selling window
+        // (countdown). Balls are NOT drawn until the countdown reaches zero.
+        stopAutoDraw();
         startNewGame();
+        startCountdown(ROUND_MINUTES * 60);
         break;
 
       case 'toggle_auto':
@@ -419,11 +431,12 @@ wss.on('connection', (ws, req) => {
         if (!gameState.drawnNumbers.includes(msg.n)) {
           gameState.drawnNumbers.push(msg.n);
           broadcastAll({ type: 'draw', n: msg.n });
-          // If ALL 75 balls drawn, start countdown for next game
+          // If ALL 75 balls drawn with no fullCard, open next selling window
           if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-            console.log('All 75 balls drawn — starting 15-min countdown');
+            console.log('All 75 balls drawn — opening next selling window');
+            stopAutoDraw();
+            startNewGame();
             startCountdown(ROUND_MINUTES * 60);
-            broadcastAll({ type: 'countdown', seconds: ROUND_MINUTES * 60 });
           }
         }
         break;
@@ -433,6 +446,28 @@ wss.on('connection', (ws, req) => {
         const localKey = `local_${msg.localId}`;
         if (gameState.prizes[localKey] && !gameState.prizes[localKey][msg.prize]) {
           gameState.prizes[localKey][msg.prize] = { cardIdx: msg.cardIdx, playerName: msg.playerName };
+
+          // ── Record the prize payout in the accounting ──
+          // Base amount from the prize table, doubled if it was an x2 win.
+          const baseAmt = PRIZE_AMOUNTS[msg.prize] || 0;
+          const amount = msg.x2 ? baseAmt * 2 : baseAmt;
+          // Was this winning card actually sold? (only sold cards are a real payout)
+          const soldList = salesData.currentGame.sales[localKey] || [];
+          const soldEntry = soldList.find(s => s.cardIdx === msg.cardIdx);
+          if (!salesData.currentGame.prizes[localKey]) salesData.currentGame.prizes[localKey] = [];
+          salesData.currentGame.prizes[localKey].push({
+            prize: msg.prize,
+            amount,
+            cardIdx: msg.cardIdx,
+            playerName: msg.playerName || (soldEntry ? soldEntry.playerName : `Cartón ${msg.cardIdx+1}`),
+            wasSold: !!soldEntry,
+            x2: !!msg.x2,
+            wonAt: new Date().toISOString()
+          });
+          saveSalesData();
+          // Notify host so the sales log updates live
+          sendTo(getHostWs(), { type: 'sales_update', localId: msg.localId, sales: soldList });
+
           // Broadcast to ALL locals + host so ticker shows on every screen
           const prizeMsg = {
             type: 'prize_won',
@@ -443,9 +478,14 @@ wss.on('connection', (ws, req) => {
             x2: msg.x2 || false
           };
           broadcastAll(prizeMsg); // sends to every connected client including all locals
-          // Auto start 10-min countdown when fullCard is won
+          // Auto start next round when fullCard is won (Opción B):
+          // archive this round, deal new cards, and open the selling window.
           if (msg.prize === 'fullCard' && !gameState.countdownActive) {
-            setTimeout(() => startCountdown(), 3000); // 3s delay so winner animation shows
+            setTimeout(() => {
+              stopAutoDraw();
+              startNewGame();
+              startCountdown(ROUND_MINUTES * 60);
+            }, 3000); // 3s delay so winner animation shows
           }
         }
         break;
