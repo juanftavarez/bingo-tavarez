@@ -166,9 +166,10 @@ function finishRound() {
 
   stopAutoDraw();
 
-  // Final cuadre of THIS round, prizes included
+  // Final cuadre of THIS round, prizes included → send to admin + all screens
   const report = buildSalesReport(salesData.currentGame);
   broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
+  console.log('📊 Cuadre enviado a admin — net total:', report.totals.net);
 
   if (autoChainStopped) {
     // Host stopped the chain — do not open a new round
@@ -178,11 +179,12 @@ function finishRound() {
     return;
   }
 
-  // Chain the next round: archive, deal new cards, open selling window
+  // Chain the next round: archive, deal new cards, open selling window.
+  // The guard is released INSIDE startNewGame, so even if this timeout is
+  // interrupted the next round can still start cleanly.
   setTimeout(() => {
-    startNewGame();
-    startCountdown(ROUND_MINUTES * 60);
-    roundFinishing = false;
+    startNewGame();          // resets roundFinishing = false
+    startCountdown(ROUND_MINUTES * 60); // broadcasts cajero_open → unlocks cajeros
   }, 3000); // 3s so the winner animation shows
 }
 
@@ -292,6 +294,7 @@ function broadcastLocalsUpdate() {
 
 // ── START NEW GAME ───────────────────────────────────────────────────
 function startNewGame() {
+  roundFinishing = false; // clear the round-finishing guard for the new round
   // Archive current game to history (with its sales + prizes)
   if (salesData.currentGame.startedAt) {
     salesData.currentGame.endedAt = new Date().toISOString();
@@ -528,10 +531,11 @@ wss.on('connection', (ws, req) => {
             x2: msg.x2 || false
           };
           broadcastAll(prizeMsg); // sends to every connected client including all locals
-          // Round ends when fullCard is won → send cuadre + chain next round
-          if (msg.prize === 'fullCard') {
-            finishRound();
-          }
+        }
+        // Round ends when fullCard is won → cuadre + chain next round.
+        // Outside the duplicate-check so it fires even if already marked.
+        if (msg.prize === 'fullCard') {
+          finishRound();
         }
         break;
 
