@@ -1,632 +1,286 @@
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const http = require('http');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Bingo Tavarez</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#060310;color:#fff;font-family:'Cinzel',serif;padding:16px;min-height:100vh}
+h1{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:18px;text-align:center;margin-bottom:20px;letter-spacing:2px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tab{padding:8px 16px;border:1px solid #d4a93a44;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;color:#888;background:#0a0220}
+.tab.active{background:#d4a93a;color:#000;font-weight:700}
+.panel{display:none}.panel.active{display:block}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.summary-card{background:#0a0220;border:1px solid #d4a93a33;border-radius:10px;padding:14px;text-align:center}
+.summary-card .val{font-family:'Cinzel Decorative',serif;font-size:22px;color:#ffd700;font-weight:900}
+.summary-card .lbl{font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.summary-card.green .val{color:#44ff88}
+.summary-card.red .val{color:#ff4466}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#1a0840;color:#d4a93a;padding:8px 10px;text-align:left;letter-spacing:1px;font-size:10px}
+td{padding:8px 10px;border-bottom:1px solid #ffffff08}
+tr:hover td{background:#0a0220}
+.badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700}
+.badge-green{background:#003300;color:#44ff88}
+.badge-red{background:#330000;color:#ff4466}
+.badge-gold{background:#332200;color:#ffd700}
+.btn{padding:8px 16px;border:1px solid #d4a93a55;border-radius:8px;cursor:pointer;
+  font-family:'Cinzel',serif;font-size:11px;color:#d4a93a;background:#0a0220;margin-right:6px}
+.btn:hover{background:#d4a93a;color:#000}
+select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;
+  color:#fff;font-family:'Cinzel',serif;font-size:11px;outline:none;margin-right:8px}
 
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+/* AUTH GATE — content hidden until login validates */
+#admin-content{display:none}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#login-box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
+#login-box h2{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;text-align:center;margin-bottom:4px}
+#login-box p{font-size:10px;color:#555;text-align:center;margin-bottom:20px;letter-spacing:1px}
+#login-box label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px}
+#login-box input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
+#login-box input:focus{border-color:#d4a93a}
+#login-box button{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
+#login-error{color:#ff4466;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+.btn-gold{background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
 
-const PORT = process.env.PORT || 8080;
-const NUM_LOCALS = 21;
-const CARDS_PER_LOCAL = 21;
+<div id="login-screen">
+  <div id="login-box">
+    <h2>✦ BINGO TAVAREZ ✦</h2>
+    <p>PANEL DE ADMINISTRACIÓN</p>
+    <label>CONTRASEÑA</label>
+    <input type="password" id="admin-pass" placeholder="••••••" autocomplete="off">
+    <button onclick="doAdminLogin()">ENTRAR</button>
+    <div id="login-error"></div>
+  </div>
+</div>
 
-// Cajero users — one per local
-const CAJERO_USERS = {};
-for(let i=1;i<=NUM_LOCALS;i++){
-  CAJERO_USERS[`local${i}`] = {
-    password: `bingo${i}`,  // default password: bingo1, bingo2, etc
-    localId: i,
-    name: `Local ${i}`
-  };
+<div id="admin-content">
+<h1>✦ BINGO TAVAREZ — ADMIN ✦</h1>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('current')">Partida Actual</div>
+  <div class="tab" onclick="showTab('history')">Historial</div>
+  <div class="tab" onclick="showTab('host')">Host</div>
+</div>
+
+<div id="panel-current" class="panel active">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+    <button class="btn" onclick="loadReport()">↻ Actualizar</button>
+    <span id="report-time" style="font-size:10px;color:#555"></span>
+  </div>
+
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-card"><div class="val" id="s-cards">-</div><div class="lbl">Cartones Vendidos</div></div>
+    <div class="summary-card green"><div class="val" id="s-revenue">-</div><div class="lbl">Ingresos</div></div>
+    <div class="summary-card red"><div class="val" id="s-prizes">-</div><div class="lbl">Premios Pagados</div></div>
+    <div class="summary-card"><div class="val" id="s-net">-</div><div class="lbl">Ganancia Neta</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Local</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
+    </thead>
+    <tbody id="locals-table"></tbody>
+  </table>
+</div>
+
+<div id="panel-history" class="panel">
+  <div style="margin-bottom:16px">
+    <button class="btn" onclick="loadHistory()">↻ Cargar Historial</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Fecha</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr>
+    </thead>
+    <tbody id="history-table"></tbody>
+  </table>
+</div>
+
+<div id="panel-host" class="panel">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:calc(100vh - 160px);text-align:center">
+    <div style="font-size:42px">🎤</div>
+    <div style="font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:16px;letter-spacing:2px">PANTALLA DEL CANTADOR</div>
+    <div style="font-size:11px;color:#888;max-width:340px;line-height:1.6">
+      El host abre en su propia ventana para que el sorteo y la conexión en tiempo real funcionen correctamente.
+    </div>
+    <button class="btn-gold" style="max-width:260px;padding:14px 24px;font-size:14px" onclick="window.open('/host','bingo_host')">▶ ABRIR PANTALLA DEL HOST</button>
+    <div style="font-size:9px;color:#555;letter-spacing:1px">Se abre en una ventana aparte · puedes dejarla en otro monitor</div>
+  </div>
+</div>
+
+</div><!-- /admin-content -->
+
+<script>
+const TABS=['current','history','host'];
+function showTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='history') loadHistory();
+  else if(id==='host'){ /* host opens in its own window via button */ }
+  else loadReport();
 }
 
-const CARD_PRICE = 50;
-const fs = require('fs');
-const SALES_FILE = './sales_data.json';
-let salesData = { games: [], currentGame: { gameId: Date.now(), startedAt: null, sales: {}, prizes: {} } };
-try {
-  if (fs.existsSync(SALES_FILE)) { salesData = JSON.parse(fs.readFileSync(SALES_FILE,'utf8')); }
-} catch(e) {}
-function saveSalesData() {
-  try { fs.writeFileSync(SALES_FILE, JSON.stringify(salesData)); } catch(e) {}
+async function loadReport(){
+  try{
+    const r=await fetch('/api/sales/current',{headers:{Authorization:'Bearer '+sessionStorage.getItem('admin_token')}});
+    if(r.status===401){ sessionStorage.removeItem('admin_token'); location.reload(); return; }
+    const d=await r.json();
+    renderReport(d.report, d.game);
+    document.getElementById('report-time').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
+  }catch(e){alert('Error: '+e.message);}
 }
 
-const ROUND_MINUTES = 10;
+function renderReport(report, game){
+  document.getElementById('s-cards').textContent=report.totals.cards;
+  document.getElementById('s-revenue').textContent='$'+report.totals.revenue.toLocaleString();
+  document.getElementById('s-prizes').textContent='$'+report.totals.prizes.toLocaleString();
+  const net=report.totals.net;
+  const netEl=document.getElementById('s-net');
+  netEl.textContent='$'+net.toLocaleString();
+  netEl.style.color=net>=0?'#44ff88':'#ff4466';
 
-// ── GAME STATE ──────────────────────────────────────────────────────
-let gameState = {
-  drawnNumbers: [],
-  active: false,
-  cards: {},
-  prizes: {},
-  localNames: {},
-  disabledLocals: new Set(), // locals with no cards sold this round
-  countdown: null,
-  countdownActive: false
-};
-
-// Init prizes per local
-function initPrizes() {
-  const p = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    p[`local_${i}`] = { L:false, T:false, X:false, CRUZ:false, line:false, fullCard:false };
+  const tbody=document.getElementById('locals-table');
+  tbody.innerHTML='';
+  Object.entries(report.locals)
+    .filter(([,l])=>l.cardsSold>0||l.prizesDetail?.length>0)
+    .sort((a,b)=>b[1].cardsSold-a[1].cardsSold)
+    .forEach(([key,local])=>{
+      const net2=local.revenue-local.prizes;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><b>${local.name}</b></td>
+        <td><b style="color:#ffd700">${local.cardsSold}</b> cartones</td>
+        <td style="color:#44ff88">$${local.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${local.prizes.toLocaleString()}</td>
+        <td><span class="badge ${net2>=0?'badge-green':'badge-red'}">$${net2.toLocaleString()}</span></td>`;
+      tr.style.cursor='pointer';
+      tr.title='Click para ver detalle';
+      tr.onclick=()=>showLocalDetail(key,local);
+      tbody.appendChild(tr);
+    });
+  if(!tbody.children.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#555;padding:16px">Sin ventas aún</td></tr>';
   }
-  return p;
 }
 
-// Init local names
-function initLocalNames() {
-  const n = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) n[`local_${i}`] = `Local ${i}`;
-  return n;
+function showLocalDetail(key, local){
+  const name=local.name;
+  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" onclick="this.remove()">
+  <div style="background:#0d0528;border:1px solid #d4a93a44;border-radius:14px;padding:16px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
+  <div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">📍 ${name}</div>`;
+  
+  html+='<div style="font-size:11px;color:#d4a93a;margin-bottom:6px;letter-spacing:1px">CARTONES VENDIDOS</div>';
+  if(local.salesDetail.length){
+    local.salesDetail.forEach(s=>{
+      const t=new Date(s.soldAt).toLocaleTimeString('es');
+      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
+        <span>${s.playerName}</span><span style="color:#44ff88">$${s.price} · ${t}</span></div>`;
+    });
+  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin ventas</div>';
+  
+  html+='<div style="font-size:11px;color:#d4a93a;margin-top:12px;margin-bottom:6px;letter-spacing:1px">PREMIOS PAGADOS</div>';
+  if(local.prizesDetail.length){
+    local.prizesDetail.forEach(p=>{
+      const t=new Date(p.wonAt).toLocaleTimeString('es');
+      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:11px">
+        <span>${p.prize} — ${p.playerName}</span><span style="color:#ff4466">-$${p.amount} · ${t}</span></div>`;
+    });
+  } else html+='<div style="color:#555;font-size:11px;padding:8px 0">Sin premios</div>';
+  
+  html+='<button onclick="this.closest(\'[style]\').remove()" style="margin-top:14px;width:100%;padding:8px;background:#d4a93a;color:#000;border:none;border-radius:8px;cursor:pointer;font-family:\'Cinzel\',serif;font-weight:700">Cerrar</button>';
+  html+='</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
 }
 
-gameState.prizes = initPrizes();
-gameState.localNames = initLocalNames();
-
-// ── CARD GENERATOR ──────────────────────────────────────────────────
-function pickRandom(lo, hi, count) {
-  const pool = [];
-  for (let i = lo; i <= hi; i++) pool.push(i);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, count);
+async function loadHistory(){
+  try{
+    const r=await fetch('/api/sales/history',{headers:{Authorization:'Bearer '+sessionStorage.getItem('admin_token')}});
+    if(r.status===401){ sessionStorage.removeItem('admin_token'); location.reload(); return; }
+    const d=await r.json();
+    const tbody=document.getElementById('history-table');
+    tbody.innerHTML='';
+    const allGames=[d.currentGame,...d.history];
+    allGames.forEach((g,i)=>{
+      const rpt=g.report;
+      const date=g.startedAt?new Date(g.startedAt).toLocaleString('es'):'En curso';
+      const net=rpt.totals.net;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i===0?'<span class="badge badge-gold">ACTUAL</span>':('#'+(d.history.length-i+1))}</td>
+        <td style="font-size:10px">${date}</td>
+        <td>${rpt.totals.cards}</td>
+        <td style="color:#44ff88">$${rpt.totals.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${rpt.totals.prizes.toLocaleString()}</td>
+        <td><span class="badge ${net>=0?'badge-green':'badge-red'}">$${net.toLocaleString()}</span></td>`;
+      tbody.appendChild(tr);
+    });
+    if(!tbody.children.length) tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#555;padding:16px">Sin historial</td></tr>';
+  }catch(e){alert('Error: '+e.message);}
 }
 
-function makeCard() {
-  const cols = [
-    pickRandom(1,15,5), pickRandom(16,30,5), pickRandom(31,45,5),
-    pickRandom(46,60,5), pickRandom(61,75,5),
-  ];
-  const grid = [];
-  for (let r = 0; r < 5; r++) {
-    const row = [];
-    for (let c = 0; c < 5; c++) {
-      if (r === 2 && c === 2) row.push(0);
-      else row.push(cols[c][r]);
-    }
-    grid.push(row);
-  }
-  return grid;
+// ── AUTH GATE ────────────────────────────────────────────────────────
+let adminStarted = false;
+
+async function doAdminLogin(){
+  const pass = document.getElementById('admin-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  try{
+    const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
+    const d = await r.json();
+    if(!r.ok){ errEl.textContent = d.error || 'Contraseña incorrecta'; return; }
+    sessionStorage.setItem('admin_token', d.token);
+    enterAdmin();
+  }catch(e){ errEl.textContent = 'Error de conexión'; }
 }
 
-function generateAllCards() {
-  const cards = {};
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    cards[`local_${i}`] = [];
-    for (let j = 0; j < CARDS_PER_LOCAL; j++) cards[`local_${i}`].push(makeCard());
-  }
-  return cards;
+function enterAdmin(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'block';
+  startAdmin();
 }
 
-// ── COUNTDOWN TIMER ─────────────────────────────────────────────────
-let countdownInterval = null;
-let countdownSeconds = ROUND_MINUTES * 60;
-let autoDrawInterval = null;
-let autoDrawRunning = false;
-const DRAW_INTERVAL_MS = 5500; // ms between balls
+function startAdmin(){
+  if(adminStarted) return;
+  adminStarted = true;
 
-// Init cards on startup
-gameState.cards = generateAllCards();
-gameState.prizes = initPrizes();
+  // Auto-refresh every 30s
+  loadReport();
+  setInterval(loadReport, 30000);
 
-function startAutoDraw() {
-  if (autoDrawRunning) return;
-  if (waitingForPlay) return; // waiting for host to press PLAY
-  autoDrawRunning = true;
-  broadcastAll({ type: 'auto_started' });
-  autoDrawInterval = setInterval(() => {
-    if (!gameState.active) return;
-    const remaining = [];
-    for (let n = 1; n <= 75; n++) {
-      if (!gameState.drawnNumbers.includes(n)) remaining.push(n);
-    }
-    if (!remaining.length) {
-      stopAutoDraw();
-      return;
-    }
-    const n = remaining[Math.floor(Math.random() * remaining.length)];
-    gameState.drawnNumbers.push(n);
-    broadcastAll({ type: 'draw', n });
-    // If ALL 75 balls drawn, start countdown
-    if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-      stopAutoDraw();
-      console.log('All 75 balls drawn — starting 10-min countdown');
-      startCountdown();
-    }
-  }, DRAW_INTERVAL_MS);
-}
-
-function stopAutoDraw() {
-  autoDrawRunning = false;
-  clearInterval(autoDrawInterval);
-  autoDrawInterval = null;
-  broadcastAll({ type: 'auto_stopped' });
-}
-
-let waitingForPlay = false; // true after reset, waiting for PLAY button
-
-function buildSalesReport(game) {
-  const report = { locals: {}, totals: { cards: 0, revenue: 0, prizes: 0, net: 0 } };
-  for (let i = 1; i <= NUM_LOCALS; i++) {
-    const key = `local_${i}`;
-    const sales = game.sales?.[key] || [];
-    const prizes = game.prizes?.[key] || [];
-    const revenue = sales.length * CARD_PRICE;
-    const prizesTotal = prizes.reduce((s, p) => s + (p.amount || 0), 0);
-    report.locals[key] = {
-      name: gameState.localNames[key] || `Local ${i}`,
-      cardsSold: sales.length, revenue, prizes: prizesTotal,
-      net: revenue - prizesTotal,
-      salesDetail: sales, prizesDetail: prizes
+  // WS for real-time sales reports
+  (function connectAdminWS(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if(msg.type === 'sales_report_auto'){
+        loadReport();
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:16px;right:16px;background:#003300;border:1px solid #44ff88;border-radius:8px;padding:10px 14px;font-size:11px;color:#44ff88;z-index:100;font-family:"Cinzel",serif';
+        banner.textContent = '✅ Nueva contabilidad recibida';
+        document.body.appendChild(banner);
+        setTimeout(()=>banner.remove(), 4000);
+      }
     };
-    report.totals.cards += sales.length;
-    report.totals.revenue += revenue;
-    report.totals.prizes += prizesTotal;
-    report.totals.net += revenue - prizesTotal;
-  }
-  return report;
+    ws.onclose = () => setTimeout(connectAdminWS, 3000);
+  })();
 }
 
-server.listen(PORT, () => {
-  console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
+// Restore session if already logged in this tab
+if(sessionStorage.getItem('admin_token')){
+  enterAdmin();
+}
+
+// Enter key submits login
+document.getElementById('admin-pass').addEventListener('keydown', e=>{
+  if(e.key==='Enter') doAdminLogin();
 });
-function startCountdown(seconds = ROUND_MINUTES * 60) {
-  if (countdownInterval) clearInterval(countdownInterval);
-  countdownSeconds = seconds;
-  gameState.countdownActive = true;
-
-  const CAJERO_CLOSE_AT = 60; // lock cajero 60s before game starts
-  let cajeroClosed = false;
-
-  // Open cajero immediately
-  broadcastAll({ type: 'cajero_open', secondsToClose: seconds - CAJERO_CLOSE_AT });
-  broadcastAll({ type: 'countdown', seconds: countdownSeconds });
-
-  countdownInterval = setInterval(() => {
-    countdownSeconds--;
-    broadcastAll({ type: 'countdown', seconds: countdownSeconds });
-
-    // Lock cajero at exactly 60s remaining
-    if (!cajeroClosed && countdownSeconds <= CAJERO_CLOSE_AT) {
-      cajeroClosed = true;
-      broadcastAll({ type: 'cajero_close' });
-      // Build and send sales report to all
-      const report = buildSalesReport(salesData.currentGame);
-      broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
-      console.log('🔒 Cajero locked at', countdownSeconds, 'seconds remaining');
-    }
-
-    if (countdownSeconds <= 0) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-      gameState.countdownActive = false;
-      waitingForPlay = false;
-      startNewGame();
-      setTimeout(() => startAutoDraw(), 2000);
-    }
-  }, 1000);
-}
-
-function stopCountdown() {
-  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-  gameState.countdownActive = false;
-  broadcastAll({ type: 'countdown_stopped' });
-}
-
-// ── CONNECTED CLIENTS ────────────────────────────────────────────────
-const clients = new Map();
-
-function broadcastAll(data, excludeWs = null) {
-  const msg = JSON.stringify(data);
-  clients.forEach((info, ws) => {
-    if (ws !== excludeWs && ws.readyState === 1) ws.send(msg);
-  });
-}
-
-function broadcastToLocal(localId, data) {
-  const msg = JSON.stringify(data);
-  clients.forEach((info, ws) => {
-    if (info.localId === localId && ws.readyState === 1) ws.send(msg);
-  });
-}
-
-function sendTo(ws, data) {
-  if (ws.readyState === 1) ws.send(JSON.stringify(data));
-}
-
-function getConnectedLocals() {
-  const set = new Set();
-  clients.forEach(info => { if (info.role === 'local') set.add(info.localId); });
-  return [...set].sort((a,b) => a-b);
-}
-
-function broadcastLocalsUpdate() {
-  broadcastAll({
-    type: 'locals_update',
-    connected: getConnectedLocals(),
-    names: gameState.localNames,
-    disabled: [...gameState.disabledLocals]
-  });
-}
-
-// ── START NEW GAME ───────────────────────────────────────────────────
-function startNewGame() {
-  // Archive current game to history
-  if (salesData.currentGame.startedAt) {
-    salesData.currentGame.endedAt = new Date().toISOString();
-    salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
-    salesData.games.unshift(salesData.currentGame); // newest first
-    if (salesData.games.length > 100) salesData.games = salesData.games.slice(0, 100);
-  }
-  // Keep sales from the selling window (collected during countdown)
-  // They belong to this new game
-  const keptSales = salesData.currentGame.sales || {};
-  salesData.currentGame = {
-    gameId: Date.now(),
-    startedAt: new Date().toISOString(),
-    sales: keptSales, // keep names already entered
-    prizes: {}
-  };
-  saveSalesData();
-
-  gameState.drawnNumbers = [];
-  gameState.active = true;
-  gameState.cards = generateAllCards();
-  gameState.prizes = initPrizes();
-  gameState.disabledLocals = new Set(); // reset disabled list each new game
-  // NOTE: localNames intentionally NOT reset — preserved across games
-
-  // Send each local their new cards
-  clients.forEach((info, ws) => {
-    if (info.role === 'local') {
-      sendTo(ws, {
-        type: 'new_game',
-        cards: gameState.cards[`local_${info.localId}`] || [],
-        drawnNumbers: [],
-        localName: gameState.localNames[`local_${info.localId}`]
-      });
-    }
-  });
-  // Send new cards to each local
-  clients.forEach((info, client) => {
-    if (info.role === 'local') {
-      sendTo(client, {
-        type: 'new_game',
-        cards: gameState.cards[`local_${info.localId}`] || [],
-        prizes: gameState.prizes[`local_${info.localId}`] || {}
-      });
-    }
-  });
-  sendTo(getHostWs(), { type: 'new_game_confirmed', state: gameState });
-  // startCountdown will open cajero when called after fullCard
-
-  // Auto-start the ball draw shortly after cards are dealt,
-  // so "NUEVA PARTIDA" begins the game without a separate PLAY press.
-  waitingForPlay = false;
-  setTimeout(() => startAutoDraw(), 1500);
-}
-
-function getHostWs() {
-  for (const [ws, info] of clients) {
-    if (info.role === 'host' && ws.readyState === 1) return ws;
-  }
-  return null;
-}
-
-// ── WEBSOCKET HANDLER ─────────────────────────────────────────────────
-wss.on('connection', (ws, req) => {
-  ws.on('message', (raw) => {
-    let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
-
-    // Resolve this connection's stored info (role, localId). Used by card_sold/unsold etc.
-    const info = clients.get(ws) || {};
-
-    switch (msg.type) {
-      case 'join_host':
-        clients.set(ws, { role: 'host' });
-        sendTo(ws, {
-          type: 'state', state: gameState,
-          countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive,
-          sales: salesData ? salesData.currentGame.sales : {}
-        });
-        broadcastLocalsUpdate();
-        break;
-
-      case 'join_cajero':
-        clients.set(ws, { role: 'cajero', localId: msg.localId });
-        // Send current countdown state
-        if (gameState.countdownActive) {
-          sendTo(ws, { type: 'countdown', seconds: countdownSeconds });
-        }
-        break;
-
-      case 'join_local':
-        clients.set(ws, { role: 'local', localId: msg.localId });
-        sendTo(ws, {
-          type: 'state',
-          state: {
-            ...gameState,
-            disabledLocals: [...gameState.disabledLocals]
-          },
-          cards: gameState.cards[`local_${msg.localId}`] || [],
-          prizes: gameState.prizes[`local_${msg.localId}`] || {},
-          localName: gameState.localNames[`local_${msg.localId}`],
-          isDisabled: gameState.disabledLocals.has(msg.localId),
-          countdown: countdownSeconds,
-          countdownActive: gameState.countdownActive,
-          sales: salesData ? (salesData.currentGame.sales[`local_${msg.localId}`] || []) : []
-        });
-        broadcastLocalsUpdate();
-        break;
-
-      case 'new_game':
-        startNewGame();
-        break;
-
-      case 'toggle_auto':
-        if (autoDrawRunning) stopAutoDraw();
-        else startAutoDraw();
-        break;
-      case 'start_auto':
-        waitingForPlay = false;
-        startAutoDraw();
-        break;
-      case 'stop_auto':
-        stopAutoDraw();
-        break;
-
-      case 'card_sold': {
-        // Local reports a card was sold
-        if (info.localId == null) break; // connection not registered to a local
-        const { cardIdx, playerName, price } = msg;
-        const localKey = `local_${info.localId}`;
-        if (!salesData.currentGame.sales[localKey]) salesData.currentGame.sales[localKey] = [];
-        // Check not already sold
-        const alreadySold = salesData.currentGame.sales[localKey].some(s => s.cardIdx === cardIdx);
-        if (!alreadySold) {
-          salesData.currentGame.sales[localKey].push({
-            cardIdx,
-            playerName: playerName || `Cartón ${cardIdx+1}`,
-            price: price || CARD_PRICE,
-            soldAt: new Date().toISOString()
-          });
-          saveSalesData();
-          // Broadcast sold status to all in same local
-          broadcastAll({ type: 'card_sold_confirm', localId: info.localId, cardIdx, playerName: playerName || `Cartón ${cardIdx+1}` });
-          // Notify host
-          sendTo(getHostWs(), { type: 'sales_update', localId: info.localId, sales: salesData.currentGame.sales[localKey] });
-        }
-        break;
-      }
-
-      case 'card_unsold': {
-        // Undo a sale
-        if (info.localId == null) break; // connection not registered to a local
-        const localKey2 = `local_${info.localId}`;
-        if (salesData.currentGame.sales[localKey2]) {
-          salesData.currentGame.sales[localKey2] = salesData.currentGame.sales[localKey2].filter(s => s.cardIdx !== msg.cardIdx);
-          saveSalesData();
-          broadcastAll({ type: 'card_unsold_confirm', localId: info.localId, cardIdx: msg.cardIdx });
-          sendTo(getHostWs(), { type: 'sales_update', localId: info.localId, sales: salesData.currentGame.sales[localKey2] });
-        }
-        break;
-      }
-
-      case 'get_sales_report': {
-        // Host requests full sales report
-        if (info.role !== 'host') break;
-        res_sales(ws);
-        break;
-      }
-
-      case 'draw':
-        if (!gameState.drawnNumbers.includes(msg.n)) {
-          gameState.drawnNumbers.push(msg.n);
-          broadcastAll({ type: 'draw', n: msg.n });
-          // If ALL 75 balls drawn, start countdown for next game
-          if (gameState.drawnNumbers.length >= 75 && !gameState.countdownActive) {
-            console.log('All 75 balls drawn — starting 15-min countdown');
-            startCountdown(ROUND_MINUTES * 60);
-            broadcastAll({ type: 'countdown', seconds: ROUND_MINUTES * 60 });
-          }
-        }
-        break;
-
-      case 'prize_won':
-        // Prizes are per-local — only update and notify that specific local
-        const localKey = `local_${msg.localId}`;
-        if (gameState.prizes[localKey] && !gameState.prizes[localKey][msg.prize]) {
-          gameState.prizes[localKey][msg.prize] = { cardIdx: msg.cardIdx, playerName: msg.playerName };
-          // Broadcast to ALL locals + host so ticker shows on every screen
-          const prizeMsg = {
-            type: 'prize_won',
-            prize: msg.prize,
-            localId: msg.localId,
-            cardIdx: msg.cardIdx,
-            playerName: msg.playerName,
-            x2: msg.x2 || false
-          };
-          broadcastAll(prizeMsg); // sends to every connected client including all locals
-          // Auto start 10-min countdown when fullCard is won
-          if (msg.prize === 'fullCard' && !gameState.countdownActive) {
-            setTimeout(() => startCountdown(), 3000); // 3s delay so winner animation shows
-          }
-        }
-        break;
-
-      case 'set_local_name':
-        gameState.localNames[`local_${msg.localId}`] = msg.name;
-        broadcastLocalsUpdate();
-        // Notify that local of their new name
-        broadcastToLocal(msg.localId, { type: 'name_update', name: msg.name });
-        break;
-
-      case 'start_countdown':
-        startCountdown(msg.seconds || ROUND_MINUTES * 60);
-        broadcastAll({ type: 'countdown', seconds: countdownSeconds });
-        break;
-
-      case 'stop_countdown':
-        stopCountdown();
-        break;
-
-      case 'reset':
-        stopAutoDraw();
-        waitingForPlay = true;
-        // Restart countdown so cajero opens
-        stopCountdown();
-        startCountdown();
-        gameState.drawnNumbers = [];
-        gameState.prizes = initPrizes();
-        gameState.cards = generateAllCards();
-        clients.forEach((info, client) => {
-          if (info.role === 'local') {
-            sendTo(client, {
-              type: 'reset',
-              cards: gameState.cards[`local_${info.localId}`] || [],
-              prizes: gameState.prizes[`local_${info.localId}`]
-            });
-          }
-        });
-        sendTo(ws, { type: 'reset_confirmed', state: gameState });
-        break;
-
-      case 'disable_local':
-        gameState.disabledLocals.add(msg.localId);
-        broadcastToLocal(msg.localId, { type: 'disabled', localId: msg.localId });
-        broadcastLocalsUpdate();
-        break;
-
-      case 'enable_local':
-        gameState.disabledLocals.delete(msg.localId);
-        broadcastToLocal(msg.localId, { type: 'enabled', localId: msg.localId });
-        broadcastLocalsUpdate();
-        break;
-
-      case 'ping':
-        sendTo(ws, { type: 'pong' });
-        break;
-    }
-  });
-
-  ws.on('close', () => {
-    clients.delete(ws);
-    broadcastLocalsUpdate();
-  });
-});
-
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  }
-}));
-app.get('/host',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
-app.get('/local',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'local.html')));
-app.get('/local/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'local.html')));
-app.get('/cajero', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cajero.html')));
-app.get('/admin',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/', (req, res) => res.redirect('/host'));
-
-// ── CAJERO & ADMIN API ───────────────────────────────────────────────
-app.post('/api/cajero/login', (req, res) => {
-  const { username, password } = req.body || {};
-  const user = CAJERO_USERS[username];
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  }
-  const token = Buffer.from(`${username}:${password}:${user.localId}`).toString('base64');
-  res.json({ ok: true, localId: user.localId, name: user.name, token });
-});
-
-function verifyCajero(req) {
-  const auth = (req.headers.authorization || '').replace('Bearer ', '');
-  try {
-    const decoded = Buffer.from(auth, 'base64').toString('utf8');
-    const parts = decoded.split(':');
-    const localId = parts[2];
-    const username = parts[0];
-    const password = parts[1];
-    const user = CAJERO_USERS[username];
-    if (!user || user.password !== password) return null;
-    return { localId: parseInt(localId), username };
-  } catch(e) { return null; }
-}
-
-app.get('/api/cajero/cards', (req, res) => {
-  const user = verifyCajero(req);
-  if (!user) return res.status(401).json({ error: 'No autorizado' });
-  const localKey = `local_${user.localId}`;
-  const cards = gameState.cards[localKey] || [];
-  const sales = salesData.currentGame.sales[localKey] || [];
-  const soldMap = {};
-  sales.forEach(s => { soldMap[s.cardIdx] = s.playerName; });
-  res.json({
-    localId: user.localId,
-    localName: gameState.localNames[localKey] || `Local ${user.localId}`,
-    gameActive: gameState.active,
-    cards: cards.map((card, i) => ({
-      idx: i, grid: card,
-      sold: soldMap[i] !== undefined,
-      playerName: soldMap[i] || ''
-    }))
-  });
-});
-
-app.post('/api/cajero/sell', (req, res) => {
-  const user = verifyCajero(req);
-  if (!user) return res.status(401).json({ error: 'No autorizado' });
-  const { cardIdx, playerName, action } = req.body || {};
-  const localKey = `local_${user.localId}`;
-  if (!salesData.currentGame.sales[localKey]) salesData.currentGame.sales[localKey] = [];
-  if (action === 'sell') {
-    const alreadySold = salesData.currentGame.sales[localKey].some(s => s.cardIdx === cardIdx);
-    if (!alreadySold) {
-      salesData.currentGame.sales[localKey].push({
-        cardIdx, playerName: playerName || `Cartón ${cardIdx+1}`,
-        price: CARD_PRICE, soldAt: new Date().toISOString()
-      });
-      saveSalesData();
-      broadcastAll({ type: 'card_sold_confirm', localId: user.localId, cardIdx, playerName: playerName || `Cartón ${cardIdx+1}` });
-    }
-  } else if (action === 'unsell') {
-    salesData.currentGame.sales[localKey] = salesData.currentGame.sales[localKey].filter(s => s.cardIdx !== cardIdx);
-    saveSalesData();
-    broadcastAll({ type: 'card_unsold_confirm', localId: user.localId, cardIdx });
-  }
-  res.json({ ok: true });
-});
-
-app.post('/api/admin/login', (req, res) => {
-  const { password } = req.body || {};
-  if (password !== 'admin2024') return res.status(401).json({ error: 'Contraseña incorrecta' });
-  res.json({ ok: true, token: Buffer.from('admin:admin2024').toString('base64') });
-});
-
-function verifyAdmin(req) {
-  const auth = (req.headers.authorization || '').replace('Bearer ', '');
-  try {
-    const decoded = Buffer.from(auth, 'base64').toString('utf8');
-    return decoded === 'admin:admin2024';
-  } catch(e) { return false; }
-}
-
-app.get('/api/sales/current', (req, res) => {
-  if (!verifyAdmin(req)) return res.status(401).json({ error: 'No autorizado' });
-  res.json({ game: salesData.currentGame, report: buildSalesReport(salesData.currentGame) });
-});
-
-app.get('/api/sales/history', (req, res) => {
-  if (!verifyAdmin(req)) return res.status(401).json({ error: 'No autorizado' });
-  const history = salesData.games.slice(0, 50).map(g => ({
-    gameId: g.gameId, startedAt: g.startedAt, endedAt: g.endedAt,
-    report: buildSalesReport(g)
-  }));
-  res.json({ history, currentGame: { gameId: salesData.currentGame.gameId, startedAt: salesData.currentGame.startedAt, report: buildSalesReport(salesData.currentGame) } });
-});
+</script>
+</body>
+</html>
