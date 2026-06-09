@@ -195,7 +195,9 @@ function buildSalesReport(game) {
     const sales = game.sales?.[key] || [];
     const prizes = game.prizes?.[key] || [];
     const revenue = sales.length * CARD_PRICE;
-    const prizesTotal = prizes.reduce((s, p) => s + (p.amount || 0), 0);
+    // Only prizes won by a SOLD (paid) card are a real payout. Prizes on
+    // unsold cards belong to the house — they are NOT discounted.
+    const prizesTotal = prizes.reduce((s, p) => s + (p.wasSold ? (p.amount || 0) : 0), 0);
     report.locals[key] = {
       name: gameState.localNames[key] || `Local ${i}`,
       cardsSold: sales.length, revenue, prizes: prizesTotal,
