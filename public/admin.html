@@ -65,6 +65,7 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
 <div class="tabs">
   <div class="tab active" onclick="showTab('current')">Partida Actual</div>
   <div class="tab" onclick="showTab('history')">Historial</div>
+  <div class="tab" onclick="showTab('host')">Host</div>
 </div>
 
 <div id="panel-current" class="panel active">
@@ -100,14 +101,28 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
   </table>
 </div>
 
+<div id="panel-host" class="panel">
+  <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+    <span style="font-size:10px;color:#d4a93a;letter-spacing:1px">PANTALLA DEL CANTADOR</span>
+    <a href="/host" target="_blank" class="btn" style="text-decoration:none;font-size:10px;padding:5px 10px">⤢ Abrir en pestaña nueva</a>
+  </div>
+  <iframe id="host-frame" src="about:blank"
+    style="width:100%;height:calc(100vh - 140px);border:1px solid #d4a93a44;border-radius:10px;background:#0a0510"></iframe>
+</div>
+
 </div><!-- /admin-content -->
 
 <script>
+const TABS=['current','history','host'];
+let hostLoaded=false;
 function showTab(id){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['current','history'][i]===id));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='history') loadHistory();
+  else if(id==='host'){
+    if(!hostLoaded){ document.getElementById('host-frame').src='/host'; hostLoaded=true; }
+  }
   else loadReport();
 }
 
