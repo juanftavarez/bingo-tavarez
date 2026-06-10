@@ -65,6 +65,8 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('current')">Partida Actual</div>
+  <div class="tab" onclick="showTab('day')">Día</div>
+  <div class="tab" onclick="showTab('local')">Por Local</div>
   <div class="tab" onclick="showTab('history')">Historial</div>
   <div class="tab" onclick="showTab('host')">Host</div>
 </div>
@@ -102,6 +104,41 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
   </table>
 </div>
 
+<div id="panel-day" class="panel">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <input type="date" id="day-date" onchange="loadDay()" style="padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;color:#fff;font-family:'Cinzel',serif;font-size:11px">
+    <button class="btn" onclick="loadDay()">↻ Cargar Día</button>
+  </div>
+  <div class="summary-grid" id="day-summary">
+    <div class="summary-card"><div class="val" id="d-cards">-</div><div class="lbl">Cartones del Día</div></div>
+    <div class="summary-card green"><div class="val" id="d-revenue">-</div><div class="lbl">Ingresos del Día</div></div>
+    <div class="summary-card red"><div class="val" id="d-prizes">-</div><div class="lbl">Premios del Día</div></div>
+    <div class="summary-card"><div class="val" id="d-net">-</div><div class="lbl">Ganancia del Día</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Hora</th><th>Estado</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr></thead>
+    <tbody id="day-table"></tbody>
+  </table>
+</div>
+
+<div id="panel-local" class="panel">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <select id="local-select" onchange="loadLocal()"></select>
+    <input type="date" id="local-date" onchange="loadLocal()" style="padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-radius:8px;color:#fff;font-family:'Cinzel',serif;font-size:11px">
+    <button class="btn" onclick="loadLocal()">↻ Cargar</button>
+  </div>
+  <div class="summary-grid" id="local-summary">
+    <div class="summary-card"><div class="val" id="l-cards">-</div><div class="lbl">Cartones</div></div>
+    <div class="summary-card green"><div class="val" id="l-revenue">-</div><div class="lbl">Ingresos</div></div>
+    <div class="summary-card red"><div class="val" id="l-prizes">-</div><div class="lbl">Premios</div></div>
+    <div class="summary-card"><div class="val" id="l-net">-</div><div class="lbl">Ganancia</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Hora</th><th>Estado</th><th>Cartones</th><th>Ingresos</th><th>Premios</th><th>Ganancia</th></tr></thead>
+    <tbody id="local-table"></tbody>
+  </table>
+</div>
+
 <div id="panel-host" class="panel">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:calc(100vh - 160px);text-align:center">
     <div style="font-size:42px">🎤</div>
@@ -117,14 +154,80 @@ select{padding:7px 12px;background:#0a0220;border:1px solid #d4a93a33;border-rad
 </div><!-- /admin-content -->
 
 <script>
-const TABS=['current','history','host'];
+const TABS=['current','day','local','history','host'];
 function showTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='history') loadHistory();
+  else if(id==='day') loadDay();
+  else if(id==='local') loadLocal();
   else if(id==='host'){ /* host opens in its own window via button */ }
   else loadReport();
+}
+
+const NUM_LOCALS=21;
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+async function loadDay(){
+  const dateEl=document.getElementById('day-date');
+  if(!dateEl.value) dateEl.value=todayStr();
+  try{
+    const r=await fetch('/api/db/day?date='+dateEl.value);
+    if(!r.ok){ const e=await r.json(); throw new Error(e.error||'Error'); }
+    const d=await r.json();
+    document.getElementById('d-cards').textContent=d.totals.cards;
+    document.getElementById('d-revenue').textContent='$'+d.totals.revenue.toLocaleString();
+    document.getElementById('d-prizes').textContent='$'+d.totals.prizes.toLocaleString();
+    const net=d.totals.net;
+    const ne=document.getElementById('d-net'); ne.textContent='$'+net.toLocaleString();
+    ne.style.color=net>=0?'#44ff88':'#ff4466';
+    const tb=document.getElementById('day-table'); tb.innerHTML='';
+    d.games.forEach(g=>{
+      const hora=g.endedAt?new Date(g.endedAt).toLocaleTimeString('es'):'-';
+      const estado=g.cancelled?'<span class="badge badge-red">CANCELADA</span>':'<span class="badge badge-green">OK</span>';
+      const n=g.totals.net;
+      tb.innerHTML+=`<tr><td style="font-size:10px">${hora}</td><td>${estado}</td>
+        <td>${g.totals.cards}</td><td style="color:#44ff88">$${g.totals.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${g.totals.prizes.toLocaleString()}</td>
+        <td><span class="badge ${n>=0?'badge-green':'badge-red'}">$${n.toLocaleString()}</span></td></tr>`;
+    });
+    if(!tb.children.length) tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:#555;padding:16px">Sin partidas este día</td></tr>';
+  }catch(e){ document.getElementById('day-table').innerHTML='<tr><td colspan="6" style="text-align:center;color:#ff4466;padding:16px">'+e.message+'</td></tr>'; }
+}
+
+function fillLocalSelect(){
+  const sel=document.getElementById('local-select');
+  if(sel.children.length) return;
+  for(let i=1;i<=NUM_LOCALS;i++){ const o=document.createElement('option'); o.value=i; o.textContent='Local '+i; sel.appendChild(o); }
+}
+async function loadLocal(){
+  fillLocalSelect();
+  const id=document.getElementById('local-select').value||1;
+  const dateEl=document.getElementById('local-date');
+  if(!dateEl.value) dateEl.value=todayStr();
+  try{
+    const r=await fetch('/api/db/local/'+id+'?date='+dateEl.value);
+    if(!r.ok){ const e=await r.json(); throw new Error(e.error||'Error'); }
+    const d=await r.json();
+    document.getElementById('l-cards').textContent=d.totals.cards;
+    document.getElementById('l-revenue').textContent='$'+d.totals.revenue.toLocaleString();
+    document.getElementById('l-prizes').textContent='$'+d.totals.prizes.toLocaleString();
+    const net=d.totals.net;
+    const ne=document.getElementById('l-net'); ne.textContent='$'+net.toLocaleString();
+    ne.style.color=net>=0?'#44ff88':'#ff4466';
+    const tb=document.getElementById('local-table'); tb.innerHTML='';
+    d.games.forEach(g=>{
+      const hora=g.endedAt?new Date(g.endedAt).toLocaleTimeString('es'):'-';
+      const estado=g.cancelled?'<span class="badge badge-red">CANCELADA</span>':'<span class="badge badge-green">OK</span>';
+      const n=g.net;
+      tb.innerHTML+=`<tr><td style="font-size:10px">${hora}</td><td>${estado}</td>
+        <td>${g.cardsSold}</td><td style="color:#44ff88">$${g.revenue.toLocaleString()}</td>
+        <td style="color:#ff4466">$${g.prizes.toLocaleString()}</td>
+        <td><span class="badge ${n>=0?'badge-green':'badge-red'}">$${n.toLocaleString()}</span></td></tr>`;
+    });
+    if(!tb.children.length) tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:#555;padding:16px">Sin partidas para este local</td></tr>';
+  }catch(e){ document.getElementById('local-table').innerHTML='<tr><td colspan="6" style="text-align:center;color:#ff4466;padding:16px">'+e.message+'</td></tr>'; }
 }
 
 async function loadReport(){
