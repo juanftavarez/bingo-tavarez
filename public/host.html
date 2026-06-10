@@ -141,9 +141,30 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
 #w-close{margin-top:18px;padding:10px 36px;font-family:'Cinzel',serif;font-size:14px;font-weight:700;
   background:linear-gradient(135deg,#d4a93a,#ffd700);color:#0a0510;border:none;border-radius:10px;cursor:pointer}
 #fwc{position:fixed;inset:0;pointer-events:none;z-index:999}
+/* AUTH GATE */
+#app{display:none}
+#host-login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#060310;z-index:10000}
+#host-login .box{background:#0d0528;border:1px solid #d4a93a44;border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center}
+#host-login h2{font-family:'Cinzel Decorative',serif;color:#d4a93a;font-size:15px;margin-bottom:4px}
+#host-login p{font-size:10px;color:#555;margin-bottom:20px;letter-spacing:1px}
+#host-login label{font-size:10px;color:#888;letter-spacing:1px;display:block;margin-bottom:4px;text-align:left}
+#host-login input{width:100%;padding:10px 14px;background:#05020f;border:1.5px solid #2a1060;border-radius:10px;color:#fff;font-family:'Cinzel',serif;font-size:13px;outline:none}
+#host-login input:focus{border-color:#d4a93a}
+#host-login button{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,#d4a93a,#aa8020);color:#000;border:none;border-radius:10px;font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:700;cursor:pointer}
+#host-login .err{color:#ff4466;font-size:11px;margin-top:8px;min-height:16px}
 </style>
 </head>
 <body>
+<div id="host-login">
+  <div class="box">
+    <h2>✦ BINGO TAVAREZ ✦</h2>
+    <p>PANEL DEL HOST</p>
+    <label>CONTRASEÑA</label>
+    <input type="password" id="host-pass" placeholder="••••••" autocomplete="off">
+    <button onclick="doHostLogin()">ENTRAR</button>
+    <div class="err" id="host-login-err"></div>
+  </div>
+</div>
 <canvas id="fwc"></canvas>
 <div id="app">
   <div id="left">
@@ -165,6 +186,7 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
       <div id="countdown-progress"><div id="countdown-fill" style="width:100%"></div></div>
       <button class="cd-btn" style="background:#004400;color:#44ff88;border-color:#44ff88" onclick="startCD()">▶</button>
       <button class="cd-btn" style="background:#3a0000;color:#ff6644;border-color:#ff4422" onclick="stopCD()">⏹</button>
+      <button class="cd-btn" style="background:#5a3a00;color:#ffcc44;border-color:#ffaa00;white-space:nowrap" onclick="startNow()">⏩ INICIAR YA</button>
     </div>
 
     <div id="controls">
@@ -265,6 +287,10 @@ function updateCountdown(s){
   document.getElementById('countdown-fill').style.width=pct+'%';
 }
 function startCD(){ws.send(JSON.stringify({type:'start_countdown',seconds:600}));countdownTotal=600;}
+function startNow(){
+  if(!confirm('¿Iniciar la jugada YA? Se cierra la venta y empiezan a cantar las bolas de inmediato.'))return;
+  ws.send(JSON.stringify({type:'start_now'}));
+}
 function stopCD(){ws.send(JSON.stringify({type:'stop_countdown'}));}
 
 // WebSocket
@@ -333,7 +359,31 @@ function connect(){
   };
   ws.onclose=()=>{document.getElementById('conn-dot').classList.remove('ok');setTimeout(connect,2000);};
 }
-connect();
+
+// ── AUTH GATE ────────────────────────────────────────────────────────
+let hostStarted=false;
+function doHostLogin(){
+  const pass=document.getElementById('host-pass').value;
+  const err=document.getElementById('host-login-err');
+  err.textContent='';
+  fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})})
+    .then(r=>r.json().then(d=>({ok:r.ok,d})))
+    .then(({ok,d})=>{
+      if(!ok){ err.textContent=d.error||'Contraseña incorrecta'; return; }
+      sessionStorage.setItem('host_token', d.token);
+      enterHost();
+    })
+    .catch(()=>{ err.textContent='Error de conexión'; });
+}
+function enterHost(){
+  document.getElementById('host-login').style.display='none';
+  document.getElementById('app').style.display='';
+  if(!hostStarted){ hostStarted=true; connect(); }
+}
+// Restore session if already logged in this tab
+if(sessionStorage.getItem('host_token')){ enterHost(); }
+// Enter key submits
+document.getElementById('host-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doHostLogin(); });
 
 // Locals panel with editable names
 let disabledLocals = new Set();
