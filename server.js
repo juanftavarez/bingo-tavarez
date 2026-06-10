@@ -70,7 +70,12 @@ function initLocalNames() {
 }
 
 gameState.prizes = initPrizes();
+// Restore saved local names from disk (survive restarts/deploys).
+// Only fall back to defaults for names that were never assigned.
 gameState.localNames = initLocalNames();
+if (salesData.localNames) {
+  Object.assign(gameState.localNames, salesData.localNames);
+}
 
 // ── CARD GENERATOR ──────────────────────────────────────────────────
 function pickRandom(lo, hi, count) {
@@ -543,6 +548,10 @@ wss.on('connection', (ws, req) => {
 
       case 'set_local_name':
         gameState.localNames[`local_${msg.localId}`] = msg.name;
+        // Persist to disk so names survive server restarts/deploys
+        if (!salesData.localNames) salesData.localNames = {};
+        salesData.localNames[`local_${msg.localId}`] = msg.name;
+        saveSalesData();
         broadcastLocalsUpdate();
         // Notify that local of their new name
         broadcastToLocal(msg.localId, { type: 'name_update', name: msg.name });
