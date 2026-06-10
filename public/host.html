@@ -161,7 +161,7 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
       <div>
         <div class="cd-label">Próxima<br>partida</div>
       </div>
-      <div id="countdown-display">15:00</div>
+      <div id="countdown-display">10:00</div>
       <div id="countdown-progress"><div id="countdown-fill" style="width:100%"></div></div>
       <button class="cd-btn" style="background:#004400;color:#44ff88;border-color:#44ff88" onclick="startCD()">▶</button>
       <button class="cd-btn" style="background:#3a0000;color:#ff6644;border-color:#ff4422" onclick="stopCD()">⏹</button>
@@ -169,8 +169,6 @@ h1{font-family:'Cinzel Decorative',serif;font-size:24px;text-align:center;
 
     <div id="controls">
       <button class="ctrl-btn" id="btn-new" onclick="newGame()">🎮 NUEVA PARTIDA</button>
-      <button class="ctrl-btn" id="btn-now" onclick="startNow()" style="background:linear-gradient(135deg,#7a4a00,#a36800);color:#ffd700;border-color:#ffd700">⏩ INICIAR YA</button>
-      <button class="ctrl-btn" id="btn-stop" onclick="stopChain()" style="background:linear-gradient(135deg,#5a0000,#3a0000);color:#ff6644;border-color:#ff4422">⏹ DETENER</button>
       <button class="ctrl-btn" id="btn-reset" onclick="resetGame()">🔄 RESET</button>
       <button class="ctrl-btn" id="btn-play" onclick="playGame()" style="background:linear-gradient(135deg,#003300,#006600);color:#44ff88;border-color:#44ff88">▶ PLAY</button>
 
@@ -266,7 +264,7 @@ function updateCountdown(s){
   const pct=(s/countdownTotal)*100;
   document.getElementById('countdown-fill').style.width=pct+'%';
 }
-function startCD(){ws.send(JSON.stringify({type:'start_countdown',seconds:900}));countdownTotal=900;}
+function startCD(){ws.send(JSON.stringify({type:'start_countdown',seconds:600}));countdownTotal=600;}
 function stopCD(){ws.send(JSON.stringify({type:'stop_countdown'}));}
 
 // WebSocket
@@ -327,12 +325,6 @@ function connect(){
         if(btn){btn.textContent='▶ AUTO';btn.classList.remove('running');}
         autoRunning=false; break;}
       case 'countdown_stopped': document.getElementById('countdown-display').textContent='--:--'; break;
-      case 'chain_stopping': chainStopped=true; updateStopBtn(); break;
-      case 'chain_stopped':
-        chainStopped=true; updateStopBtn();
-        document.getElementById('countdown-display').textContent='--:--';
-        break;
-      case 'chain_resumed': chainStopped=false; updateStopBtn(); break;
       case 'reset_confirmed':
         drawnNums=new Set();document.querySelectorAll('.ball').forEach(b=>b.classList.remove('drawn'));
         document.getElementById('prize-log-list').innerHTML='<div style="font-size:11px;color:#555;text-align:center;padding:8px">Sin premios aún</div>';
@@ -497,28 +489,8 @@ function resetSlot(){
 }
 
 // Game controls
-function newGame(){if(!confirm('¿Nueva partida? Se generan nuevos cartones para todos.'))return;chainStopped=false;updateStopBtn();ws.send(JSON.stringify({type:'new_game'}));}
+function newGame(){if(!confirm('¿Nueva partida? Se generan nuevos cartones para todos.'))return;ws.send(JSON.stringify({type:'new_game'}));}
 function playGame(){ws.send(JSON.stringify({type:'start_auto'}));}
-function startNow(){if(!confirm('¿Iniciar la jugada YA? Se cierra la venta y empiezan las bolas de inmediato.'))return;ws.send(JSON.stringify({type:'start_now'}));}
-let chainStopped=false;
-function stopChain(){
-  chainStopped=!chainStopped;
-  ws.send(JSON.stringify({type: chainStopped ? 'stop_chain' : 'resume_chain'}));
-  updateStopBtn();
-}
-function updateStopBtn(){
-  const b=document.getElementById('btn-stop');
-  if(!b)return;
-  if(chainStopped){
-    b.textContent='▶ REANUDAR';
-    b.style.background='linear-gradient(135deg,#003300,#006600)';
-    b.style.color='#44ff88'; b.style.borderColor='#44ff88';
-  } else {
-    b.textContent='⏹ DETENER';
-    b.style.background='linear-gradient(135deg,#5a0000,#3a0000)';
-    b.style.color='#ff6644'; b.style.borderColor='#ff4422';
-  }
-}
 function resetGame(){if(!confirm('¿Resetear partida?'))return;ws.send(JSON.stringify({type:'reset'}));}
 function toggleAuto(){
   const btn=document.getElementById('btn-auto');
