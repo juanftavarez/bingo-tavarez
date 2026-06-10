@@ -29,12 +29,81 @@ const PRIZE_AMOUNTS = {
   line: 150, fullCard: 500
 };
 
+// ── PERSISTENCE: PostgreSQL (Railway) with in-memory working copy ─────
+const { Pool } = require('pg');
 const fs = require('fs');
 const SALES_FILE = './sales_data.json';
-let salesData = { games: [], currentGame: { gameId: Date.now(), startedAt: null, sales: {}, prizes: {} } };
-try {
-  if (fs.existsSync(SALES_FILE)) { salesData = JSON.parse(fs.readFileSync(SALES_FILE,'utf8')); }
-} catch(e) {}
+
+// In-memory working copy. currentGame is the round in progress; games is a
+// recent cache. The permanent record lives in Postgres (table "games").
+let salesData = { games: [], currentGame: { gameId: Date.now(), startedAt: null, sales: {}, prizes: {} }, localNames: {} };
+
+let pool = null;
+let dbReady = false;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  pool.on('error', (e) => console.error('PG pool error:', e.message));
+}
+
+async function initDb() {
+  if (!pool) { console.warn('⚠️ No DATABASE_URL — running with file/memory only'); return; }
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS games (
+        game_id     BIGINT PRIMARY KEY,
+        started_at  TIMESTAMPTZ,
+        ended_at    TIMESTAMPTZ,
+        cancelled   BOOLEAN DEFAULT FALSE,
+        report      JSONB,
+        sales       JSONB,
+        prizes      JSONB,
+        created_at  TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS games_ended_idx ON games (ended_at);
+      CREATE TABLE IF NOT EXISTS local_names (
+        local_key TEXT PRIMARY KEY,
+        name      TEXT NOT NULL
+      );
+    `);
+    dbReady = true;
+    console.log('✅ PostgreSQL conectado y tablas listas');
+    // Load saved local names into memory
+    const r = await pool.query('SELECT local_key, name FROM local_names');
+    r.rows.forEach(row => { salesData.localNames[row.local_key] = row.name; });
+  } catch (e) {
+    console.error('❌ Error iniciando DB:', e.message);
+  }
+}
+
+// Archive a finished/cancelled game permanently to Postgres
+async function archiveGameToDb(game, report) {
+  if (!dbReady) return;
+  try {
+    await pool.query(
+      `INSERT INTO games (game_id, started_at, ended_at, cancelled, report, sales, prizes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (game_id) DO UPDATE SET ended_at=$3, cancelled=$4, report=$5, sales=$6, prizes=$7`,
+      [game.gameId, game.startedAt, game.endedAt || new Date().toISOString(),
+       !!game.cancelled, JSON.stringify(report), JSON.stringify(game.sales||{}), JSON.stringify(game.prizes||{})]
+    );
+  } catch (e) { console.error('archiveGameToDb error:', e.message); }
+}
+
+async function saveLocalNameToDb(localKey, name) {
+  if (!dbReady) return;
+  try {
+    await pool.query(
+      `INSERT INTO local_names (local_key, name) VALUES ($1,$2)
+       ON CONFLICT (local_key) DO UPDATE SET name=$2`,
+      [localKey, name]
+    );
+  } catch (e) { console.error('saveLocalNameToDb error:', e.message); }
+}
+
+// Legacy file save kept only as a backup of the live round (best-effort)
 function saveSalesData() {
   try { fs.writeFileSync(SALES_FILE, JSON.stringify(salesData)); } catch(e) {}
 }
@@ -220,6 +289,11 @@ function buildSalesReport(game) {
 server.listen(PORT, () => {
   console.log(`✅ Bingo Tavarez corriendo en puerto ${PORT}`);
 });
+
+// Connect to Postgres, then apply any saved local names over the defaults
+initDb().then(() => {
+  if (salesData.localNames) Object.assign(gameState.localNames, salesData.localNames);
+});
 function startCountdown(seconds = ROUND_MINUTES * 60) {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownSeconds = seconds;
@@ -306,8 +380,10 @@ function startNewGame() {
   if (salesData.currentGame.startedAt) {
     salesData.currentGame.endedAt = new Date().toISOString();
     salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
-    salesData.games.unshift(salesData.currentGame); // newest first
+    salesData.games.unshift(salesData.currentGame); // newest first (memory cache)
     if (salesData.games.length > 100) salesData.games = salesData.games.slice(0, 100);
+    // Permanent record in Postgres
+    archiveGameToDb(salesData.currentGame, buildSalesReport(salesData.currentGame));
   }
   // Fresh round — clean slate. Sales of the new selling window start empty.
   salesData.currentGame = {
@@ -546,16 +622,17 @@ wss.on('connection', (ws, req) => {
         }
         break;
 
-      case 'set_local_name':
-        gameState.localNames[`local_${msg.localId}`] = msg.name;
-        // Persist to disk so names survive server restarts/deploys
+      case 'set_local_name': {
+        const lk = `local_${msg.localId}`;
+        gameState.localNames[lk] = msg.name;
         if (!salesData.localNames) salesData.localNames = {};
-        salesData.localNames[`local_${msg.localId}`] = msg.name;
+        salesData.localNames[lk] = msg.name;
         saveSalesData();
+        saveLocalNameToDb(lk, msg.name); // permanent in Postgres
         broadcastLocalsUpdate();
-        // Notify that local of their new name
         broadcastToLocal(msg.localId, { type: 'name_update', name: msg.name });
         break;
+      }
 
       case 'start_countdown':
         startCountdown(msg.seconds || ROUND_MINUTES * 60);
@@ -575,6 +652,7 @@ wss.on('connection', (ws, req) => {
           salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
           salesData.games.unshift(salesData.currentGame);
           if (salesData.games.length > 500) salesData.games = salesData.games.slice(0, 500);
+          archiveGameToDb(salesData.currentGame, buildSalesReport(salesData.currentGame));
         }
         // Fresh round — clean slate, new cards, empty sales/prizes
         salesData.currentGame = {
@@ -731,4 +809,100 @@ app.get('/api/sales/history', (req, res) => {
     report: buildSalesReport(g)
   }));
   res.json({ history, currentGame: { gameId: salesData.currentGame.gameId, startedAt: salesData.currentGame.startedAt, report: buildSalesReport(salesData.currentGame) } });
+});
+
+// ── PERMANENT HISTORY FROM POSTGRES ──────────────────────────────────
+// Helper: sum a report's totals into a day accumulator
+function blankTotals() { return { cards: 0, revenue: 0, prizes: 0, net: 0, games: 0 }; }
+
+// All games of a given day (default: today). ?date=YYYY-MM-DD
+app.get('/api/db/day', async (req, res) => {
+  if (!dbReady) return res.status(503).json({ error: 'Base de datos no disponible' });
+  try {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `SELECT game_id, started_at, ended_at, cancelled, report
+       FROM games
+       WHERE ended_at::date = $1
+       ORDER BY ended_at ASC`, [date]
+    );
+    const totals = blankTotals();
+    const games = r.rows.map(row => {
+      const rep = row.report || {};
+      const t = rep.totals || { cards:0, revenue:0, prizes:0, net:0 };
+      if (!row.cancelled) {
+        totals.cards += t.cards; totals.revenue += t.revenue;
+        totals.prizes += t.prizes; totals.net += t.net; totals.games += 1;
+      }
+      return { gameId: row.game_id, startedAt: row.started_at, endedAt: row.ended_at,
+               cancelled: row.cancelled, totals: t };
+    });
+    res.json({ date, totals, games });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// One local's games for a day. /api/db/local/3?date=YYYY-MM-DD
+app.get('/api/db/local/:id', async (req, res) => {
+  if (!dbReady) return res.status(503).json({ error: 'Base de datos no disponible' });
+  try {
+    const id = parseInt(req.params.id);
+    const key = `local_${id}`;
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `SELECT game_id, started_at, ended_at, cancelled, report
+       FROM games
+       WHERE ended_at::date = $1
+       ORDER BY ended_at ASC`, [date]
+    );
+    const totals = blankTotals();
+    const games = [];
+    r.rows.forEach(row => {
+      const local = row.report?.locals?.[key];
+      if (!local) return;
+      if (!row.cancelled) {
+        totals.cards += local.cardsSold; totals.revenue += local.revenue;
+        totals.prizes += local.prizes; totals.net += local.net; totals.games += 1;
+      }
+      games.push({ gameId: row.game_id, endedAt: row.ended_at, cancelled: row.cancelled,
+                   cardsSold: local.cardsSold, revenue: local.revenue,
+                   prizes: local.prizes, net: local.net });
+    });
+    res.json({ localId: id, name: gameState.localNames[key] || `Local ${id}`, date, totals, games });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Range summary per day. /api/db/range?from=YYYY-MM-DD&to=YYYY-MM-DD&local=3(optional)
+app.get('/api/db/range', async (req, res) => {
+  if (!dbReady) return res.status(503).json({ error: 'Base de datos no disponible' });
+  try {
+    const to = req.query.to || new Date().toISOString().slice(0, 10);
+    const from = req.query.from || to;
+    const localKey = req.query.local ? `local_${parseInt(req.query.local)}` : null;
+    const r = await pool.query(
+      `SELECT ended_at::date AS day, cancelled, report
+       FROM games
+       WHERE ended_at::date BETWEEN $1 AND $2
+       ORDER BY day ASC`, [from, to]
+    );
+    const byDay = {};
+    const grand = blankTotals();
+    r.rows.forEach(row => {
+      if (row.cancelled) return;
+      const day = row.day.toISOString ? row.day.toISOString().slice(0,10) : String(row.day);
+      if (!byDay[day]) byDay[day] = blankTotals();
+      let t;
+      if (localKey) {
+        const l = row.report?.locals?.[localKey];
+        if (!l) return;
+        t = { cards: l.cardsSold, revenue: l.revenue, prizes: l.prizes, net: l.net };
+      } else {
+        t = row.report?.totals || { cards:0, revenue:0, prizes:0, net:0 };
+      }
+      byDay[day].cards += t.cards; byDay[day].revenue += t.revenue;
+      byDay[day].prizes += t.prizes; byDay[day].net += t.net; byDay[day].games += 1;
+      grand.cards += t.cards; grand.revenue += t.revenue;
+      grand.prizes += t.prizes; grand.net += t.net; grand.games += 1;
+    });
+    res.json({ from, to, local: req.query.local || null, byDay, grand });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
