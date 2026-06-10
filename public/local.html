@@ -491,7 +491,13 @@ function connect(){
         loadCards(msg.cards);
         drawnNums=new Set();prizes={L:false,T:false,X:false,CRUZ:false,line:false,fullCard:false};
         highlightedLines.clear();resetPrizePanel();resetSlot();
-        setStatus('Partida reseteada');break;
+        if(msg.cancelled){
+          setStatus('⚠️ PARTIDA CANCELADA');
+          showCancelBanner();
+        } else {
+          setStatus('Partida reseteada');
+        }
+        break;
     }
   };
   ws.onclose=()=>{document.getElementById('conn-dot').classList.remove('ok');setStatus('Desconectado...');setTimeout(connect,2000);};
@@ -499,6 +505,17 @@ function connect(){
 connect();
 
 function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+function showCancelBanner(){
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;inset:0;background:rgba(40,0,0,.82);z-index:9999;display:flex;'
+    +'align-items:center;justify-content:center;flex-direction:column;gap:12px;'
+    +"font-family:'Cinzel Decorative',serif;animation:fadeIn .2s";
+  b.innerHTML='<div style="font-size:64px">⚠️</div>'
+    +'<div style="font-size:40px;color:#ff5555;font-weight:900;letter-spacing:4px;text-shadow:0 0 30px #ff000088">PARTIDA CANCELADA</div>'
+    +'<div style="font-size:16px;color:#ffaa88">Nueva venta abierta</div>';
+  document.body.appendChild(b);
+  setTimeout(()=>{ b.style.transition='opacity .5s'; b.style.opacity='0'; setTimeout(()=>b.remove(),500); }, 3500);
+}
 function setLocalName(name){
   document.getElementById('local-name-display').textContent=name;
   document.title=`${name} - Bingo Tavarez`;
