@@ -557,26 +557,48 @@ wss.on('connection', (ws, req) => {
         stopCountdown();
         break;
 
-      case 'reset':
+      case 'reset': {
         stopAutoDraw();
-        waitingForPlay = true;
-        // Restart countdown so cajero opens
-        stopCountdown();
-        startCountdown();
+        // Archive the current round as CANCELLED (for the day's records)
+        if (salesData.currentGame.startedAt) {
+          salesData.currentGame.endedAt = new Date().toISOString();
+          salesData.currentGame.cancelled = true;
+          salesData.currentGame.drawnNumbers = [...gameState.drawnNumbers];
+          salesData.games.unshift(salesData.currentGame);
+          if (salesData.games.length > 500) salesData.games = salesData.games.slice(0, 500);
+        }
+        // Fresh round — clean slate, new cards, empty sales/prizes
+        salesData.currentGame = {
+          gameId: Date.now(),
+          startedAt: new Date().toISOString(),
+          sales: {},
+          prizes: {}
+        };
+        saveSalesData();
+        roundFinishing = false;
         gameState.drawnNumbers = [];
         gameState.prizes = initPrizes();
         gameState.cards = generateAllCards();
+        gameState.active = true;
+        // Tell locals the round was cancelled + give them fresh empty cards
         clients.forEach((info, client) => {
           if (info.role === 'local') {
             sendTo(client, {
               type: 'reset',
+              cancelled: true,
               cards: gameState.cards[`local_${info.localId}`] || [],
               prizes: gameState.prizes[`local_${info.localId}`]
             });
           }
         });
+        // Tell cajeros to clear sold names (new selling window)
+        broadcastAll({ type: 'cajero_reset' });
         sendTo(ws, { type: 'reset_confirmed', state: gameState });
+        // Open a brand-new selling window with the countdown from zero
+        stopCountdown();
+        startCountdown(ROUND_MINUTES * 60);
         break;
+      }
 
       case 'disable_local':
         gameState.disabledLocals.add(msg.localId);
