@@ -147,6 +147,12 @@ body.playing .sold-overlay{display:none}
 .cell.win-full{background:radial-gradient(circle,#ffd700,#cc8800)!important;color:#000!important;
   border-color:#ffd700!important;box-shadow:0 0 12px rgba(255,215,0,.95)!important;font-weight:900!important;
   animation:fullGlow .8s ease-in-out infinite alternate!important}
+/* Prize emoji overlaid on each winning cell (number stays visible behind) */
+.cell[data-emoji]{position:relative}
+.cell[data-emoji]::after{
+  content:attr(data-emoji);position:absolute;top:-2px;right:-2px;
+  font-size:11px;line-height:1;pointer-events:none;
+  text-shadow:0 0 3px #000,0 0 2px #000;z-index:3}
 @keyframes lineGlow{from{box-shadow:0 0 6px rgba(0,255,200,.7)}to{box-shadow:0 0 20px rgba(0,255,200,1),0 0 5px #fff}}
 @keyframes fullGlow{from{box-shadow:0 0 6px rgba(255,215,0,.7)}to{box-shadow:0 0 20px rgba(255,215,0,1),0 0 5px #fff8}}
 .bingo-card.winner{animation:winFlash .5s ease-in-out 4;border-color:#ffd700;box-shadow:0 0 24px rgba(255,215,0,.8)}
@@ -442,6 +448,11 @@ function connect(){
         } else {
           addTickerItem(msg);
         }
+        break;
+      case 'round_ended':
+        // Round finished (ball 75 drawn) → remove the winner banner
+        clearTimeout(window._winnerTimer);
+        closeWinner();
         break;
       case 'card_sold_confirm':
         if(msg.localId === LOCAL_ID){
@@ -784,7 +795,7 @@ function highlightLine(ci,line){
   if(line.type==='row')for(let c=0;c<5;c++)cells.push([line.idx,c]);
   else if(line.type==='col')for(let r=0;r<5;r++)cells.push([r,line.idx]);
   else for(let i=0;i<5;i++)cells.push([i,line.idx===0?i:4-i]);
-  cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');}});
+  cells.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-line');el.setAttribute('data-emoji','⭐');}});
 }
 
 // isCardX2: ONLY triggers if the ball that just came out IS the x2 number
@@ -866,11 +877,15 @@ function handleCardSoldConfirm(localId, cardIdx, playerName){
   if(btn){btn.textContent='✅ VENDIDO';btn.style.background='#003300';btn.style.color='#44ff88';}
 }
 
+function setCellEmoji(ci,r,c,emoji){
+  const el=document.getElementById(`cell-${ci}-${r}-${c}`);
+  if(el) el.setAttribute('data-emoji',emoji);
+}
 function checkWin(ci){
   if(prizes.fullCard)return;
   if(prizes.line&&hasFullCard(ci)){
     prizes.fullCard=true;
-    for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');}}
+    for(let r=0;r<5;r++)for(let c=0;c<5;c++){const el=document.getElementById(`cell-${ci}-${r}-${c}`);if(el){el.style.cssText='';el.classList.add('win-full');el.setAttribute('data-emoji','🌟');}}
     const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
     gameOver = true;
     ws.send(JSON.stringify({type:'prize_won',prize:'fullCard',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
@@ -890,7 +905,7 @@ function checkWin(ci){
       if(pair.every(([r,c])=>isMarked(ci,r,c))){
         prizes.COSITA=true;
         pair.forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-          if(el)el.style.cssText='background:radial-gradient(circle,#ff9944,#cc5500)!important;border-color:#ff9944!important;box-shadow:0 0 12px #ff994499!important;color:#000!important;font-weight:900!important;';
+          if(el){el.style.cssText='background:radial-gradient(circle,#ff9944,#cc5500)!important;border-color:#ff9944!important;box-shadow:0 0 12px #ff994499!important;color:#000!important;font-weight:900!important;';el.setAttribute('data-emoji','🎯');}
         });
         const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
         ws.send(JSON.stringify({type:'prize_won',prize:'COSITA',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
@@ -904,7 +919,7 @@ function checkWin(ci){
     if(midMarked.length>=2){
       prizes.MEDIO=true;
       midMarked.slice(0,2).forEach(c=>{const el=document.getElementById(`cell-${ci}-2-${c}`);
-        if(el)el.style.cssText='background:radial-gradient(circle,#ff44aa,#880055)!important;border-color:#ff44aa!important;box-shadow:0 0 12px #ff44aa99!important;color:#fff!important;font-weight:900!important;';
+        if(el){el.style.cssText='background:radial-gradient(circle,#ff44aa,#880055)!important;border-color:#ff44aa!important;box-shadow:0 0 12px #ff44aa99!important;color:#fff!important;font-weight:900!important;';el.setAttribute('data-emoji','➖');}
       });
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
       ws.send(JSON.stringify({type:'prize_won',prize:'MEDIO',localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));
@@ -915,8 +930,9 @@ function checkWin(ci){
     if(!prizes[shape]&&hasPattern(ci,shape)){
       prizes[shape]=true;
       const PCOLS={L:'#44ff88',T:'#dd44ff',X:'#ff4466',CRUZ:'#44ffff'};
+      const PEMO={L:'🟩',T:'🟪',X:'❌',CRUZ:'➕'};
       PATTERNS[shape].forEach(([r,c])=>{const el=document.getElementById(`cell-${ci}-${r}-${c}`);
-        if(el)el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;});
+        if(el){el.style.cssText=`background:radial-gradient(circle,${PCOLS[shape]},#440088)!important;border-color:${PCOLS[shape]}!important;box-shadow:0 0 12px ${PCOLS[shape]}99!important;color:#000!important;font-weight:900!important;`;el.setAttribute('data-emoji',PEMO[shape]);}});
       const name=document.getElementById(`name-${ci}`)?.value.trim()||`Cartón ${ci+1}`;
       ws.send(JSON.stringify({type:'prize_won',prize:shape,localId:LOCAL_ID,cardIdx:ci,playerName:name,x2:isCardX2(ci)}));return;
     }
@@ -993,8 +1009,9 @@ function showWinner(msg){
   document.getElementById('winner-ov').classList.add('show');
   launchFW();
   clearTimeout(window._winnerTimer);
-  if(msg.prize==='fullCard') window._winnerTimer = setTimeout(closeWinner, 60000);
-  else window._winnerTimer = setTimeout(closeWinner, 7000);
+  // Other prizes auto-close after a few seconds. The fullCard banner stays
+  // up until the round actually ends (ball 75 → server sends round_ended).
+  if(msg.prize!=='fullCard') window._winnerTimer = setTimeout(closeWinner, 7000);
 }
 function closeWinner(){document.getElementById('winner-ov').classList.remove('show');stopFW();}
 
