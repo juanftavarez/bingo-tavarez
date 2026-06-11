@@ -243,6 +243,7 @@ function finishRound() {
   // Final cuadre of THIS round, prizes included → send to admin + all screens
   const report = buildSalesReport(salesData.currentGame);
   broadcastAll({ type: 'sales_report_auto', report, closedAt: new Date().toISOString() });
+  broadcastAll({ type: 'round_ended' }); // tell host to hide the winner banner
   console.log('📊 Cuadre enviado a admin — net total:', report.totals.net);
 
   if (autoChainStopped) {
@@ -253,13 +254,12 @@ function finishRound() {
     return;
   }
 
-  // Chain the next round: archive, deal new cards, open selling window.
-  // The guard is released INSIDE startNewGame, so even if this timeout is
-  // interrupted the next round can still start cleanly.
+  // Chain the next round immediately: archive, deal new cards, open the
+  // selling window with the countdown right away.
   setTimeout(() => {
     startNewGame();          // resets roundFinishing = false
     startCountdown(ROUND_MINUTES * 60); // broadcasts cajero_open → unlocks cajeros
-  }, 3000); // 3s so the winner animation shows
+  }, 500); // brief gap so the cuadre/round_ended messages are processed first
 }
 
 function buildSalesReport(game) {
@@ -615,11 +615,8 @@ wss.on('connection', (ws, req) => {
           };
           broadcastAll(prizeMsg); // sends to every connected client including all locals
         }
-        // Round ends when fullCard is won → cuadre + chain next round.
-        // Outside the duplicate-check so it fires even if already marked.
-        if (msg.prize === 'fullCard') {
-          finishRound();
-        }
+        // NOTE: fullCard no longer ends the round. Balls keep drawing until
+        // all 75 are out — that is when finishRound() fires (see auto/manual draw).
         break;
 
       case 'set_local_name': {
