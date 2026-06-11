@@ -377,12 +377,11 @@ function doHostLogin(){
 }
 function enterHost(){
   document.getElementById('host-login').style.display='none';
-  document.getElementById('app').style.display='';
+  document.getElementById('app').style.display='flex';
   if(!hostStarted){ hostStarted=true; connect(); }
 }
-// Restore session if already logged in this tab
-if(sessionStorage.getItem('host_token')){ enterHost(); }
-// Enter key submits
+// Always require the password on load (no stale-token auto-entry, which
+// could leave a blank screen if the saved token was invalid).
 document.getElementById('host-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doHostLogin(); });
 
 // Locals panel with editable names
