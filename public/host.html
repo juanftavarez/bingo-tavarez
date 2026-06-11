@@ -327,7 +327,7 @@ function connect(){
           const b=document.getElementById(`ball-${msg.n}`);
           if(b)b.classList.add('drawn');
           updateDrawnList();
-          updateSlot(msg.n); // animate bolillero in host too
+          updateLastBall(msg.n, getCol(msg.n)); // animate bolillero in host too
         }
         break;
       case 'locals_update':
